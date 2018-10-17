@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    >
+
+    <TextView
+        android:id="@+id/index_tvw"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:text="1"
+        android:textSize="24dp"
+        android:background="@drawable/bg_oval"
+        android:gravity="center"
+        android:layout_margin="10dp"
+        />
+
+    <TextView
+        android:id="@+id/task_name_tvw"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_weight="1"
+        android:text="Line 1"
+        android:textColor="#ff000000"
+        android:textSize="20dp" />
+    <TextView
+        android:id="@+id/start_time_tvw"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:text="14:30"
+        android:layout_margin="10dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:gravity="center"
+        android:background="@drawable/bg_select"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="--"
+        android:layout_margin="10dp"
+        />
+
+    <TextView
+        android:id="@+id/end_time_tvw"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:background="@drawable/bg_select"
+        android:paddingBottom="5dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="5dp"
+        android:gravity="center"
+        android:text="16:30" />
+
+    <ImageView
+        android:id="@+id/more_ibn"
+        android:layout_width="30dp"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="5dp"
+        android:src="@drawable/more"
+        android:scaleType="center"
+        />
+
+
+
+</LinearLayout>

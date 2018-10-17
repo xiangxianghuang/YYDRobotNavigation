@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    >
+
+
+    <EditText
+        android:id="@+id/angle_edt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:imeOptions="flagNoExtractUi"
+        />
+    <Button
+        android:id="@+id/execute_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="转动到指定位置"
+        />
+
+    <TextView
+        android:id="@+id/current_tvw"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="20"
+        />
+
+    <Button
+        android:id="@+id/query_angle_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="查询当前角度"
+        />
+
+
+    <Button
+        android:id="@+id/go_to_nearby_path_charging_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="自动就近路径充电"
+        />
+
+
+</LinearLayout>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="CircularProgressView">
+        <attr name="ringWidth" format="dimension" />
+        <attr name="ringColor" format="color|reference" />
+        <attr name="progressTitle" format="string" />
+    </declare-styleable>
+
+
+    <!-- 刷新控件 -->
+    <declare-styleable name="SwipyRefreshLayout">
+        <attr name="srl_direction">
+            <enum name="top" value="0" />
+            <enum name="bottom" value="1" />
+            <enum name="both" value="2" />
+        </attr>
+    </declare-styleable>
+
+</resources>

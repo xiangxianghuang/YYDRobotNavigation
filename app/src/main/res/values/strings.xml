@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">导航应用</string>
+
+    <string name="tips_is_at_start_point">请确认当前是否在开机点</string>
+    <string name="tips_no_at_start_point">小勇当前不在开机点上哦~\n请将小勇带到开机点再开机吧</string>
+    <string name="btn_confirm">确定</string>
+    <string name="current_task_state">当前任务状态</string>
+    <string name="task_setting">巡线任务设置</string>
+</resources>
