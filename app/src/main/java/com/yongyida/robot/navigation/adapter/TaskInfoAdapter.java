@@ -2,25 +2,20 @@ package com.yongyida.robot.navigation.adapter;
 
 import android.app.TimePickerDialog;
 import android.content.Context;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.yongyida.robot.navigation.R;
-import com.yongyida.robot.navigation.bean.TaskInfo;
+import com.yongyida.robot.navigation.bean.TimerTask;
 import com.yongyida.robot.navigation.popup.MorePopupWindow;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
@@ -33,10 +28,10 @@ public class TaskInfoAdapter extends BaseAdapter {
     private Context context;
     private LayoutInflater inflater;
 
-    private ArrayList<TaskInfo> taskInfos;
+    private ArrayList<TimerTask> taskInfos;
 
 
-    public TaskInfoAdapter(Context context, ArrayList<TaskInfo> taskInfos) {
+    public TaskInfoAdapter(Context context, ArrayList<TimerTask> taskInfos) {
 
         this.context = context;
         this.inflater = LayoutInflater.from(context);
@@ -52,9 +47,9 @@ public class TaskInfoAdapter extends BaseAdapter {
 
         if(taskInfos != null){
 
-            Collections.sort(taskInfos, new Comparator<TaskInfo>() {
+            Collections.sort(taskInfos, new Comparator<TimerTask>() {
                 @Override
-                public int compare(TaskInfo o1, TaskInfo o2) {
+                public int compare(TimerTask o1, TimerTask o2) {
 
                     if(o1.getStartHour() == o2.getStartHour()){
 
@@ -127,7 +122,7 @@ public class TaskInfoAdapter extends BaseAdapter {
         TextView mEndTimeTvw;
         ImageView mMoreIbn;
 
-        TaskInfo taskInfo ;
+        TimerTask taskInfo ;
 
         ViewHolder(View view) {
             this.view = view;
@@ -154,7 +149,7 @@ public class TaskInfoAdapter extends BaseAdapter {
 
             if(position > 0){
 
-                TaskInfo lastTaskInfo = taskInfos.get(position - 1);
+                TimerTask lastTaskInfo = taskInfos.get(position - 1);
                 //当前起始时间小于上一个结束时间
                 if(taskInfo.getStartHour() < lastTaskInfo.getEndHour()){
                     // 错误数据
@@ -256,7 +251,7 @@ public class TaskInfoAdapter extends BaseAdapter {
     }
 
     //
-    private TaskInfo taskInfo ;
+    private TimerTask taskInfo ;
 
     private MorePopupWindow morePopupWindow ;
     private MorePopupWindow.OnDataChangeListener onDataChangeListener = new MorePopupWindow.OnDataChangeListener() {
@@ -287,7 +282,7 @@ public class TaskInfoAdapter extends BaseAdapter {
         }
     } ;
 
-    private void showMorePop(TaskInfo taskInfo, View view){
+    private void showMorePop(TimerTask taskInfo, View view){
 
         this.taskInfo = taskInfo ;
 

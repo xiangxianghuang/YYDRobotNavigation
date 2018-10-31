@@ -26,7 +26,6 @@ public class VideoHelper {
         this.context = context ;
     }
 
-
     public interface PlayVideoListener{
 
         void onEnd() ;

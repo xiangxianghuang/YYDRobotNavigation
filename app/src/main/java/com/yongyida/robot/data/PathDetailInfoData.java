@@ -21,7 +21,6 @@ public class PathDetailInfoData {
 
     private static final String TAG = PathDetailInfoData.class.getSimpleName() ;
 
-
     private static final Gson GSON = new Gson() ;
     private static final String PATH_DETAIL_INFO_DATA = "PathDetailInfoData" ;
 
@@ -43,9 +42,9 @@ public class PathDetailInfoData {
 
 
 
-    public static String toKey(String mapName, String pathName, String pointName){
+    public static String toKey(String mapName, String graphName, String pointName){
 
-        return mapName + "_" + pathName + "_" + pointName ;
+        return mapName + "_" + graphName + "_" + pointName ;
     }
 
 
@@ -53,13 +52,14 @@ public class PathDetailInfoData {
      * 获取某个地图 某条路径 某个点的详细信息
      *
      * */
-    public PointActionInfo queryPathDetailInfo(String pointName){
+    public PointActionInfo queryPathDetailInfo(String key){
+
+        LogHelper.i(TAG, LogHelper.__TAG__() + ",key : " + key);
 
         PointActionInfo pointActionInfo = null ;
 
         SharedPreferences sp = context.getSharedPreferences(PATH_DETAIL_INFO_DATA, Context.MODE_PRIVATE) ;
 
-        String key = pointName ;
         String data = sp.getString(key, null) ;
         LogHelper.i(TAG, LogHelper.__TAG__() + ",data : " + data);
         if(!TextUtils.isEmpty(data)){
@@ -97,19 +97,19 @@ public class PathDetailInfoData {
     }
 
 
-    /**
-     * 保存数据
-     * */
-    public void savePathDetailInfo(String pathKey, PointActionInfo pointInfo){
-
-        SharedPreferences sp = context.getSharedPreferences(PATH_DETAIL_INFO_DATA, Context.MODE_PRIVATE) ;
-        SharedPreferences.Editor editor = sp.edit() ;
-        String data = GSON.toJson(pointInfo) ;
-        LogHelper.i(TAG, LogHelper.__TAG__() + ",data : " + data);
-        editor.putString(pathKey, data) ;
-        editor.apply() ;
-
-    }
+//    /**
+//     * 保存数据
+//     * */
+//    public void savePathDetailInfo(String pathKey, PointActionInfo pointInfo){
+//
+//        SharedPreferences sp = context.getSharedPreferences(PATH_DETAIL_INFO_DATA, Context.MODE_PRIVATE) ;
+//        SharedPreferences.Editor editor = sp.edit() ;
+//        String data = GSON.toJson(pointInfo) ;
+//        LogHelper.i(TAG, LogHelper.__TAG__() + ",data : " + data);
+//        editor.putString(pathKey, data) ;
+//        editor.apply() ;
+//
+//    }
 
 
 }

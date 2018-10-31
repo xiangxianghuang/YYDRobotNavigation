@@ -37,9 +37,12 @@ public class VoiceHelper {
     }
 
 
-
     public void setVoice(MediaData.Voice voice) {
         this.voice = voice;
+    }
+
+    public MediaData.Voice getVoice() {
+        return voice;
     }
 
     public interface SpeakListener{
@@ -52,7 +55,6 @@ public class VoiceHelper {
 
     private MediaPlayer mediaPlayer ;
     private SpeakListener speakListener ;
-
 
 
     public void startSpeak(String type , SpeakListener speakListener){

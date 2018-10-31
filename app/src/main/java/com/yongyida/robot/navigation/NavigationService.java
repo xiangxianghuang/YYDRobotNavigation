@@ -19,11 +19,13 @@ import com.gs.gsnavlibrary.api.GsApi;
 import com.gs.gsnavlibrary.listener.ResponseListener;
 import com.yongyida.robot.data.MapInfoData;
 import com.yongyida.robot.navigation.activity.MapActivity;
+import com.yongyida.robot.navigation.bean.BaseTask;
 import com.yongyida.robot.navigation.bean.MapInfo;
-import com.yongyida.robot.navigation.bean.TaskInfo;
-import com.yongyida.robot.navigation.activity.PlayVideoActivity;
+import com.yongyida.robot.navigation.bean.TeamTask;
+import com.yongyida.robot.navigation.bean.TimerTask;
 import com.yongyida.robot.util.LogHelper;
 
+import java.util.ArrayList;
 import java.util.Locale;
 
 /**
@@ -56,14 +58,15 @@ public class NavigationService extends Service {
     }
 
 
-    private TaskHandle mTaskHandle ;
+    private TaskHandler mTaskHandler;
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+
+
         return new NavigationBinder() ;
     }
-
 
     public class NavigationBinder extends Binder{
 
@@ -78,7 +81,7 @@ public class NavigationService extends Service {
 
             if(!initMap()){
 
-                mTaskHandle.init(mSelectMapInfo) ;
+                mTaskHandler.init(mSelectMapInfo) ;
             }
 
         }
@@ -88,20 +91,23 @@ public class NavigationService extends Service {
 
             if(!initMap()){
 
-                mTaskHandle.controlTask(isRun);
+                mTaskHandler.controlCurrTimerTask(isRun);
                 return true ;
             }
             return false ;
         }
 
-        public boolean taskIsRun(){
 
-            return mTaskHandle.isRun() ;
+        /**当前定时任务*/
+        public TimerTask getCurrTimerTask(){
+
+            return mTaskHandler.getCurrTimerTask() ;
         }
 
-        public TaskInfo getCurrTaskInfo(){
+        /**当前任务*/
+        public BaseTask getCurrTask(){
 
-            return mTaskHandle.getCurrTaskInfo() ;
+            return mTaskHandler.getCurrTask() ;
         }
 
 
@@ -109,6 +115,25 @@ public class NavigationService extends Service {
 
             mTimeChangedListener = timeChangedListener ;
         }
+
+
+        // 获取列表
+        public ArrayList<TeamTask> getTeamTask(){
+
+            return mTaskHandler.getTeamTasks() ;
+        }
+
+        public void startTeamTask(String teamName,TeamTaskListener teamTaskListener){
+
+            mTaskHandler.startTeamTask(teamName, teamTaskListener) ;
+        }
+
+
+        public void stopTeamTask(String teamName){
+
+            mTaskHandler.stopTeamTask(teamName);
+        }
+
 
     }
 
@@ -118,7 +143,7 @@ public class NavigationService extends Service {
 
         initMap();
 
-        mTaskHandle = TaskHandle.getInstance(this) ;
+        mTaskHandler = TaskHandler.getInstance(this) ;
         registerReceiver();
 
     }
@@ -199,6 +224,8 @@ public class NavigationService extends Service {
 
     private void loadMap(final MapInfo mapInfo, final String mapName, final String startPointName){
 
+        mTaskHandler.queryTeamTasks(mapName);
+
         // 加载地图
         ResponseListener<String> responseListener = new ResponseListener<String>() {
             @Override
@@ -208,7 +235,7 @@ public class NavigationService extends Service {
 
                 isInitMap = true ;
                 mSelectMapInfo = mapInfo ;
-                mTaskHandle.init(mapInfo);
+                mTaskHandler.init(mapInfo);
             }
 
             @Override
@@ -224,7 +251,6 @@ public class NavigationService extends Service {
         };
         GsApi.requestInitialize(responseListener,mapName, startPointName) ;
     }
-
 
 
     @Override
@@ -248,7 +274,6 @@ public class NavigationService extends Service {
         intentFilter.addAction(Intent.ACTION_TIME_CHANGED);     //设置了系统时间
         intentFilter.addAction(ACTION_BATTERY_CHANGE);
 //        intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
-
 
         registerReceiver(mTimeChangeReceiver, intentFilter);
     }
@@ -276,7 +301,7 @@ public class NavigationService extends Service {
 
 
                 if(isInitMap){
-                    mTaskHandle.changeTime();
+                    mTaskHandler.changeTime();
                 }
 
             } if(ACTION_BATTERY_CHANGE.equals(action)){
@@ -306,7 +331,7 @@ public class NavigationService extends Service {
         LogHelper.i(TAG, LogHelper.__TAG__()  +  ", isCharging : " + isCharging +  ", level : " + level ) ;
 
         if(isInitMap){
-            mTaskHandle.batteryChange(level);
+            mTaskHandler.batteryChange(level);
         }
     }
 

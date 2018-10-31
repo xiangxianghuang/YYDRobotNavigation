@@ -34,7 +34,6 @@ public class LogHelper {
     public static void i(String tag, String info) {
         if (debug) {
             Log.i(tag, info);
-//			Log.i("hxx",tag + info);
         }
         saveSdcardFile("i", tag, info) ;
     }
@@ -62,11 +61,6 @@ public class LogHelper {
     }
 
 
-    public static String TAG() {
-
-        String tag = __FILE__() ;
-        return tag.substring(0,tag.indexOf(".java")) ;
-    }
 
     public static String __TAG__() {
         StackTraceElement traceElement = ((new Exception()).getStackTrace())[1];
@@ -100,14 +94,9 @@ public class LogHelper {
         return sdf.format(now);
     }
 
-
-
-
     // 以下将文件保存本地
     private static boolean isSaveFile = false ;
     private static String packageName ;
-
-
 
     public static void enableSaveFile(Context context){
 

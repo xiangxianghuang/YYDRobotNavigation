@@ -166,9 +166,9 @@ public class EditPathActivity extends Activity implements View.OnClickListener, 
 
                 JSONObject json = task.start_param ;
                 String mapName = json.getString("map_name") ;
-                String pathName = json.getString("graph_name") ;
+                String graphName = json.getString("graph_name") ;
 
-                requestPathPoints(mapName, pathName) ;
+                requestPathPoints(mapName, graphName) ;
             }else {
 
                 requestNextPathPoints() ;
@@ -184,27 +184,28 @@ public class EditPathActivity extends Activity implements View.OnClickListener, 
 
     PathDetailInfoData mPathDetailInfoData ;
 
-    private void requestPathPoints(final String mapName, final String pathName){
+    private void requestPathPoints(final String mapName, final String graphName){
 
-        LogHelper.i(TAG, LogHelper.TAG() + ", mapName " +  mapName + ", pathName " +  pathName );
+        LogHelper.i(TAG, LogHelper.__TAG__() + ", mapName " +  mapName + ", graphName " +  graphName );
 
         //2、SKETCH_GRAPH ,  // 手绘路径
         SketchGraphApi.requestSketchGraph(new ResponseListener<SketchGraph>() {
             @Override
             public void success(SketchGraph sketchGraph) {
 
-                LogHelper.i(TAG, LogHelper.TAG() + ", pathName " +  pathName + ", sketchGraphName " +  sketchGraph.name );
+                LogHelper.i(TAG, LogHelper.__TAG__()+ ", graphName " +  graphName + ", sketchGraphName " +  sketchGraph.name );
 
                 List<ActionPoint> points = sketchGraph.points;
                 final int size = points.size();
                 for (int i = 0; i < size; i++) {
 
                     String pointName = points.get(i).name ;
+                    String key = PathDetailInfoData.toKey(mapName, graphName, pointName);
 
-                    PointActionInfo pointActionInfo = mPathDetailInfoData.queryPathDetailInfo(pointName) ;
+                    PointActionInfo pointActionInfo = mPathDetailInfoData.queryPathDetailInfo(key) ;
 
-                    mPointNames.add(pointName) ;
-                    mPointActionInfos.put(pointName, pointActionInfo) ;
+                    mPointNames.add(key) ;
+                    mPointActionInfos.put(key, pointActionInfo) ;
                 }
 
                 requestNextPathPoints() ;
@@ -218,7 +219,7 @@ public class EditPathActivity extends Activity implements View.OnClickListener, 
             public void error(Throwable throwable) {
 
             }
-        }, mapName, pathName);
+        }, mapName, graphName);
 
     }
 

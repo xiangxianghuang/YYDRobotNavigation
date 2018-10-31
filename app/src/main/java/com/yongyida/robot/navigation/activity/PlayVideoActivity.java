@@ -91,15 +91,13 @@ public class PlayVideoActivity extends Activity implements MediaPlayer.OnPrepare
     @Override
     public void onCompletion(MediaPlayer mp) {
 
-        LogHelper.i(TAG, LogHelper.TAG() + "times : " + mTimes );
+        LogHelper.i(TAG, LogHelper.__TAG__()+ "times : " + mTimes );
 
         if(--mTimes > 0){
 
             mp.start();
 
         }else {
-
-
 
             mPlayVideoListener.onEnd();
             finish();
@@ -110,16 +108,13 @@ public class PlayVideoActivity extends Activity implements MediaPlayer.OnPrepare
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
 
-        LogHelper.i(TAG, LogHelper.TAG() + "what : " + what + "extra : " + extra );
+        LogHelper.i(TAG, LogHelper.__TAG__()+ "what : " + what + "extra : " + extra );
 
         mPlayVideoListener.onError();
         finish();
 
         return false;
     }
-
-
-
 
 
 }

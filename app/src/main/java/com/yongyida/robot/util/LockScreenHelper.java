@@ -61,8 +61,7 @@ public class LockScreenHelper {
         LogHelper.i(TAG, LogHelper.__TAG__());
 
         cancelLockScreenTimer() ;
-
-        mHandler.postDelayed(mRunnable, DELAY_TIME) ;
+//        mHandler.postDelayed(mRunnable, DELAY_TIME) ;
     }
 
 

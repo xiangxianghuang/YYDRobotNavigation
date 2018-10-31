@@ -24,7 +24,7 @@ import com.yongyida.robot.navigation.adapter.PathInfoAdapter;
 import com.yongyida.robot.navigation.adapter.TaskInfoAdapter;
 import com.yongyida.robot.navigation.bean.MapInfo;
 import com.yongyida.robot.navigation.bean.PathInfo;
-import com.yongyida.robot.navigation.bean.TaskInfo;
+import com.yongyida.robot.navigation.bean.TimerTask;
 import com.yongyida.robot.navigation.view.refresh.SwipyRefreshLayout;
 import com.yongyida.robot.navigation.view.refresh.SwipyRefreshLayoutDirection;
 
@@ -64,7 +64,7 @@ public class TaskSettingActivity extends Activity implements View.OnClickListene
     private SwipyRefreshLayout mPathSrl;
 
     // 任务
-    private ArrayList<TaskInfo> mTaskInfos ;
+    private ArrayList<TimerTask> mTaskInfos ;
     private TaskInfoAdapter mTaskInfoAdapter ;
 
 
@@ -230,7 +230,7 @@ public class TaskSettingActivity extends Activity implements View.OnClickListene
 
                     PathInfo pathInfo = mPathInfos.get(selectIndex) ;
 
-                    TaskInfo taskInfo = new TaskInfo() ;
+                    TimerTask taskInfo = new TimerTask() ;
                     taskInfo.setPathInfo(pathInfo);
                     mTaskInfos.add(taskInfo) ;
 

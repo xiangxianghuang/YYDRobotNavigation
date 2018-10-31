@@ -11,17 +11,15 @@ import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.TimePicker;
 
 import com.yongyida.robot.navigation.NavigationService;
 import com.yongyida.robot.navigation.R;
-import com.yongyida.robot.navigation.bean.TaskInfo;
+import com.yongyida.robot.navigation.bean.BaseTask;
+import com.yongyida.robot.navigation.bean.TimerTask;
 import com.yongyida.robot.navigation.dialog.CurrentTaskStateDialog;
 import com.yongyida.robot.util.LockScreenHelper;
-import com.yongyida.robot.util.LogHelper;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -51,9 +49,9 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
         @Override
         public void onTimeChanged() {
 
-            refreshTime() ;
+            refreshTime();
         }
-    } ;
+    };
 
 
     private NavigationService.NavigationBinder mNavigationBinder;
@@ -72,7 +70,10 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
             mNavigationBinder = null;
         }
     };
-
+    /**
+     * 收队任务
+     */
+    private Button mTeamBtn;
 
 
     private void bindService() {
@@ -96,7 +97,7 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
         setContentView(R.layout.activity_task_general);
         initView();
 
-        refreshTime() ;
+        refreshTime();
     }
 
     @Override
@@ -127,16 +128,18 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
         mMapSettingBtn = findViewById(R.id.map_setting_btn);
         mMapSettingBtn.setOnClickListener(this);
         mTimeTvw = (TextView) findViewById(R.id.time_tvw);
+        mTeamBtn = (Button) findViewById(R.id.team_btn);
+        mTeamBtn.setOnClickListener(this);
     }
 
-    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("HH:mm") ;
+    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("HH:mm");
 
     /**
      * 更新时间
-     * */
-    private void refreshTime(){
+     */
+    private void refreshTime() {
 
-        String time = mSimpleDateFormat.format(new Date()) ;
+        String time = mSimpleDateFormat.format(new Date());
         mTimeTvw.setText(time);
     }
 
@@ -148,10 +151,9 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
 
                 if (mNavigationBinder != null) {
 
-                    TaskInfo currTaskInfo = mNavigationBinder.getCurrTaskInfo();
-                    boolean isTaskRun = mNavigationBinder.taskIsRun();
+                    TimerTask currTimerTask = mNavigationBinder.getCurrTimerTask();
 
-                    showCurrentTaskStateDialog(currTaskInfo, isTaskRun);
+                    showCurrentTaskStateDialog(currTimerTask);
 
                 }
 
@@ -168,6 +170,12 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
                 startActivity(intent);
 
                 break;
+            case R.id.team_btn:
+
+                intent = new Intent(this, TeamActivity.class);
+                startActivity(intent);
+
+                break;
         }
     }
 
@@ -180,17 +188,16 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
         }
     };
 
-    private void showCurrentTaskStateDialog(TaskInfo currTaskInfo, boolean isTaskRun) {
+    private void showCurrentTaskStateDialog(TimerTask currTaskInfo) {
 
         if (mCurrentTaskStateDialog == null) {
 
-            mCurrentTaskStateDialog = new CurrentTaskStateDialog(this, currTaskInfo, isTaskRun);
+            mCurrentTaskStateDialog = new CurrentTaskStateDialog(this,currTaskInfo);
             mCurrentTaskStateDialog.setToggleTaskListener(mToggleTaskListener);
 
         } else {
 
-            mCurrentTaskStateDialog.setCurrTaskInfo(currTaskInfo);
-            mCurrentTaskStateDialog.setTaskRun(isTaskRun);
+            mCurrentTaskStateDialog.setTask(currTaskInfo);
         }
 
         mCurrentTaskStateDialog.show();

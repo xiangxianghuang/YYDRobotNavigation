@@ -9,7 +9,9 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.yongyida.robot.navigation.R;
-import com.yongyida.robot.navigation.bean.TaskInfo;
+import com.yongyida.robot.navigation.bean.BaseTask;
+import com.yongyida.robot.navigation.bean.TeamTask;
+import com.yongyida.robot.navigation.bean.TimerTask;
 import com.yongyida.robot.util.Constant;
 
 import java.util.Locale;
@@ -27,55 +29,49 @@ public class CurrentTaskStateDialog extends Dialog implements View.OnClickListen
     private Button mOperationTaskBtn;
 
 
-
-    private TaskInfo currTaskInfo ;
-    private boolean isTaskRun ;
+    private TimerTask currTimerTask ;
 
 
-
-    public CurrentTaskStateDialog(@NonNull Context context,TaskInfo currTaskInfo ,boolean isTaskRun ) {
+    public CurrentTaskStateDialog(@NonNull Context context, TimerTask currTimerTask ) {
         super(context);
 
-        this.currTaskInfo = currTaskInfo;
-        this.isTaskRun = isTaskRun;
-
+        setTaskData(currTimerTask ) ;
     }
 
-    public void setCurrTaskInfo(TaskInfo currTaskInfo){
 
-        this.currTaskInfo = currTaskInfo;
+    public void setTask(TimerTask currTimerTask){
 
+        setTaskData(currTimerTask ) ;
         setCurrTaskInfoView() ;
     }
 
+    private void setTaskData(TimerTask currTimerTask){
+
+        this.currTimerTask = currTimerTask ;
+    }
+
+
     private void setCurrTaskInfoView(){
 
-        if(currTaskInfo != null){
+        if(currTimerTask != null){
 
-            mTaskNameTvw.setText(String.format(Locale.CHINA, "当前任务：%s", currTaskInfo.getPathInfo().getName()));
-            mTaskTimeTvw.setText(String.format(Locale.CHINA, "执行时断：%02d:%02d—%02d:%02d", currTaskInfo.getStartHour(), currTaskInfo.getStartMinute(), currTaskInfo.getEndHour(), currTaskInfo.getEndMinute()));
-
+            boolean isTimerTaskRun = !currTimerTask.isStop() ;
+            mTaskNameTvw.setText(String.format(Locale.CHINA, "当前任务：%s", currTimerTask.getPathInfo().getName()));
+            mTaskTimeTvw.setText(String.format(Locale.CHINA, "执行时断：%02d:%02d—%02d:%02d", currTimerTask.getStartHour(), currTimerTask.getStartMinute(), currTimerTask.getEndHour(), currTimerTask.getEndMinute()));
+            mTaskStateTvw.setText(String.format(Locale.CHINA, "状态：%s", isTimerTaskRun?"执行中" : "暂停中"));
             mOperationTaskBtn.setVisibility(View.VISIBLE);
 
+            mOperationTaskBtn.setText(isTimerTaskRun ? "停止当前任务" : "开始当前任务");
         }else{
 
             mTaskNameTvw.setText("当前任务：无");
             mTaskTimeTvw.setText("执行时断：无");
-
+            mTaskStateTvw.setText("") ;
             mOperationTaskBtn.setVisibility(View.GONE);
-
         }
+
     }
 
-    public void setTaskRun(boolean isTaskRun) {
-        this.isTaskRun = isTaskRun;
-
-        setTaskRunView() ;
-    }
-    public void setTaskRunView() {
-
-        mOperationTaskBtn.setText(isTaskRun ? "停止当前任务" : "开始当前任务");
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,7 +90,6 @@ public class CurrentTaskStateDialog extends Dialog implements View.OnClickListen
 
         setCurrTaskInfoView() ;
 
-        setTaskRunView() ;
     }
 
 
@@ -109,10 +104,19 @@ public class CurrentTaskStateDialog extends Dialog implements View.OnClickListen
 
             if(toggleTaskListener != null){
 
-                boolean isResult = toggleTaskListener.toggleTask(!isTaskRun) ;
+                boolean isResult = toggleTaskListener.toggleTask(currTimerTask.isStop()) ;
                 if(isResult){
-                    isTaskRun = !isTaskRun;
-                    mOperationTaskBtn.setText(isTaskRun ? "停止当前任务" : "开始当前任务");
+
+                    if(currTimerTask.isStop()){
+
+                        mTaskStateTvw.setText("状态：暂停中");
+                        mOperationTaskBtn.setText("开始当前任务");
+
+                    }else {
+
+                        mTaskStateTvw.setText("状态：执行中");
+                        mOperationTaskBtn.setText("停止当前任务");
+                    }
                 }
             }
         }

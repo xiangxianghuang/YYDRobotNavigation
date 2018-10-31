@@ -5,13 +5,13 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
-import com.yongyida.robot.navigation.bean.TaskInfo;
+import com.yongyida.robot.navigation.bean.TimerTask;
 
 import java.util.ArrayList;
 
 /**
  * Create By HuangXiangXiang 2018/8/31
- *
+ * 任务列表
  *
  */
 public class TaskInfoData {
@@ -37,7 +37,7 @@ public class TaskInfoData {
         this.context = context ;
     }
 
-    public ArrayList<TaskInfo> query(String key){
+    public ArrayList<TimerTask> query(String key){
 
         SharedPreferences sp = context.getSharedPreferences(TASK_INFO_DATA, Context.MODE_PRIVATE) ;
         String json = sp.getString(key, null) ;
@@ -54,7 +54,7 @@ public class TaskInfoData {
     }
 
 
-    public void save(String key, ArrayList<TaskInfo> taskInfos){
+    public void save(String key, ArrayList<TimerTask> taskInfos){
 
         TaskInfos tasks = new TaskInfos();
         tasks.taskInfos = taskInfos ;
@@ -68,12 +68,9 @@ public class TaskInfoData {
 
     }
 
-
-
-
     private class TaskInfos{
 
-        private ArrayList<TaskInfo> taskInfos ;
+        private ArrayList<TimerTask> taskInfos ;
     }
 
 }
