@@ -58,7 +58,7 @@ public class CloseTeamActivity extends Activity implements MediaPlayer.OnErrorLi
         initView();
 
         Intent intent = getIntent() ;
-        mImageId = intent.getIntExtra(KEY_IMAGE_ID, R.drawable.close_team_1) ;
+        mImageId = intent.getIntExtra(KEY_IMAGE_ID, R.drawable.close_team_5) ;
         mPath = intent.getStringExtra(KEY_PATH) ;
 //        mPath = "voice/fangfang/收队.mp3" ;
 

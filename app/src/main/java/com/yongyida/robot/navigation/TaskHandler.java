@@ -1516,8 +1516,8 @@ public class TaskHandler {
      * */
     private void startTeamTaskTips(String teamName){
 
-        String path = "voice/fangfang/收队.mp3"  ;
-        int imageId = R.drawable.close_team_1 ;
+//        String path = "voice/fangfang/收队.mp3"  ;
+//        int imageId = R.drawable.close_team_5 ;
         CloseTeamHelper.CloseTeamListener closeTeamListener = null ;
 
         CloseTeamHelper.getInstance(mContext).startCloseTeam(teamName, closeTeamListener);

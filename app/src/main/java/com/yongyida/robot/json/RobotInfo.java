@@ -2,6 +2,7 @@ package com.yongyida.robot.json;
 
 /**
  * Create By HuangXiangXiang 2018/10/25
+ *
  */
 public class RobotInfo {
 

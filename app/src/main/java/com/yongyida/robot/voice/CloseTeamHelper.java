@@ -48,7 +48,7 @@ public class CloseTeamHelper {
             int id = context.getResources().getIdentifier(name,"drawable", context.getPackageName()) ;
             CloseTeamData closeTeamData = new CloseTeamData(audioName, id);
 
-            closeTeamDatas.put(String.valueOf(i), closeTeamData) ;
+            closeTeamDatas.put(i+"_c", closeTeamData) ;
         }
 
         return closeTeamDatas;
