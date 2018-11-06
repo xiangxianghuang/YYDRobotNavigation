@@ -118,48 +118,13 @@ public class TeamActivity extends Activity implements View.OnClickListener, Adap
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
         TeamTask teamTask = mTeamTasks.get(position) ;
-        mNavigationBinder.startTeamTask(teamTask.getTeamName(),mTeamTaskListener);
 
+        mTeamNames.clear();
+        mTeamNames.add(teamTask.getTeamName()) ;
+        mNavigationBinder.startTeamTasks(mTeamNames);
     }
 
-
-    private TeamTaskListener mTeamTaskListener = new TeamTaskListener() {
-
-        @Override
-        public void onStartTeamLine(String pathName, String pointName) {
-
-        }
-
-        @Override
-        public void onTeamTaskStart(String teamName) {
-
-        }
-
-        @Override
-        public void onTeamTaskSchedule(String teamName, float percent) {
-
-        }
-
-        @Override
-        public void onTeamTaskComplete(String teamName) {
-
-        }
-
-        @Override
-        public void onFail(String teamName, int failCode, String failMessage) {
-
-        }
-
-        @Override
-        public void onAllTeamTaskComplete() {
-
-        }
-
-        @Override
-        public void onException(String teamName, Exception exception) {
-
-        }
-    };
+    private ArrayList<String> mTeamNames = new ArrayList<>() ;
 
 
 }

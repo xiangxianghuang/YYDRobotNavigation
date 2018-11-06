@@ -3,6 +3,9 @@ package com.yongyida.robot.util;
 import android.content.Context;
 import android.content.Intent;
 
+import com.yongyida.robot.json.Base;
+import com.yongyida.robot.json.TransferData;
+
 /**
  * Create By HuangXiangXiang 2018/9/5
  * 主要是与主服务相关的信息
@@ -148,6 +151,14 @@ public class MainServiceInfo {
     // 参数3：代表时间【单位：秒】
 
 
+    /*------------------------------------【天气】------------------------------------------------*/
+    // 来自机器人收队的请求
+    public static final int RECV_BSN_CLOSE_TEAM_CMD = 5012;
+
+    // 发给机器人收队的请求
+    public static final int SEND_BSN_CLOSE_TEAM_CMD = 5013;
+
+
     /**
      * 向主服务发送Service信息
      * */
@@ -240,15 +251,30 @@ public class MainServiceInfo {
             startFunction(context, FUNC_START_LISTENING, RESULT_DIRECT_LISTEN) ;
         }
 
-        private static void startFunction(Context context, String function, String result){
+    private static void startFunction(Context context, String function, String result){
 
-            Intent service = new Intent(ACTION_BSN_SERVICE) ;
-            service.setClassName("com.yongyida.robot.business",
-                    "com.yongyida.robot.brain.system.MainService" ) ;
-            service.putExtra(KEY_FUNCTION, function) ;
-            service.putExtra(KEY_RESULT, result) ;
+        Intent service = new Intent(ACTION_BSN_SERVICE) ;
+        service.setClassName("com.yongyida.robot.business",
+                "com.yongyida.robot.brain.system.MainService" ) ;
+        service.putExtra(KEY_FUNCTION, function) ;
+        service.putExtra(KEY_RESULT, result) ;
 
-            context.startService(service) ;
+        context.startService(service) ;
+    }
+
+
+    public static void response(Context context, Base base){
+
+        String json = TransferData.packToString(base) ;
+
+        Intent intent = new Intent(ACTION_BSN_SERVICE);
+        intent.setPackage(PACKAGE_BSN_SERVICE);
+        intent.putExtra(KEY_FROM, context.getPackageName());
+        intent.putExtra(KEY_FUNCTION, FUNC_CMD_MSG);
+        intent.putExtra(KEY_CMD, RECV_BSN_CLOSE_TEAM_CMD);
+        intent.putExtra(KEY_MSG, json);
+
+        context.startService(intent);
     }
 
 

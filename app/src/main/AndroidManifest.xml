@@ -38,7 +38,11 @@
         <activity android:name=".activity.TeamActivity" />
         <activity android:name=".activity.CloseTeamActivity" />
 
-        <service android:name=".NavigationService" />
+        <service android:name=".NavigationService" >
+            <intent-filter>
+                <action android:name="com.yongyida.robot.NAVIGATION"/>
+            </intent-filter>
+        </service>
 
         <receiver android:name=".NavigationReceiver">
             <intent-filter>

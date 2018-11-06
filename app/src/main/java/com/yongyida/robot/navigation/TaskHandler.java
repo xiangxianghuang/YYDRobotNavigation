@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.Nullable;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -93,16 +92,16 @@ public class TaskHandler {
     // 充电任务
     private ChargingTask mChargingTask = new ChargingTask();                                // 充电任务
 
-
     // 收队任务
-    private TeamTask mTeamTask ;                                        // 当前收队任务
-    private ArrayList<TeamTask> mTeamTasks = new ArrayList<>();         // 全部的收队任务
+    private TeamTask mTeamTask ;                                // 当前收队任务
+    private ArrayList<TeamTask> mTeamTasks = new ArrayList<>(); // 全部的收队任务
 
 
-    private int hour ;                                                  // 当前小时
-    private int minute ;                                                // 当前分钟
-    private boolean isAutoCharging = false;                             // 是否处于自动充电
-    private int batteryLevel = 100 ;                                    // 初始化高 否则机器一开始去充电
+    private int hour ;                                          // 当前小时
+    private int minute ;                                        // 当前分钟
+    private int charger = 0;                                    // 充电状态，0：未充电，3：自动充电，4：手动充电，5：自动充电下电池充满
+    private int batteryLevel = 100 ;                            // 初始化高 否则机器一开始去充电
+//    private boolean isChargingForward = false ;               // 是否尝试向前冲，离开充电桩
 
 
     private TaskHandler(Context context) {
@@ -110,10 +109,8 @@ public class TaskHandler {
         mContext = context;
 
         refreshTime() ;
-
         startListen() ;
     }
-
 
     public BaseTask getCurrTask() {
 
@@ -127,7 +124,6 @@ public class TaskHandler {
 
         return mCurrTimerTask;
     }
-
 
     /**
      * 监听路径运行回调
@@ -258,18 +254,18 @@ public class TaskHandler {
                     try {
                         JSONObject jsonObject = new JSONObject(s) ;
                         int charger = jsonObject.getInt("charger") ;
-                        boolean isAutoCharging =(charger == 3);
 
-                        if(TaskHandler.this.isAutoCharging != isAutoCharging){
+                        if(TaskHandler.this.charger != charger){
+                            TaskHandler.this.charger = charger;
 
-                            if(!isAutoCharging && mChargingTask.isIn()){
+                            if(charger == 0){
 
-                                leaveChargingPoint();
+                                if(mLeaveChargingPointListener != null){
+                                    mLeaveChargingPointListener.onLeaveChargingPoint();
+                                    mLeaveChargingPointListener = null ;
+                                }
                             }
-
-                            TaskHandler.this.isAutoCharging = isAutoCharging;
                         }
-
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -333,6 +329,8 @@ public class TaskHandler {
         resumeTask();
     }
 
+
+
     /**
      * 是的达到 离开充电路径的终点
      * */
@@ -343,77 +341,66 @@ public class TaskHandler {
 
         if(pointName != null){
 
-            if(mCurrTask == null) {
+            if(NavigationHelper.POINT_WORK_NAME.equals(pointName)){ // 起始点
 
-                if(pointName.equals(mChargingTask.getOutAutoChargingPointName())){
+                if(mCurrTimerTask != null){ // 有定时任务
 
-                    if(mCurrTimerTask != null){ //如果当前定时任务不为空
+                    NavigationHelper.goToTimerTaskPath(mMapInfo.getMapName(), mCurrTimerTask.getPathInfo().getName());
 
-                        startCurrTimerTask();
-                    }else {
+                }else{ // 前往充电点
 
-                        startChargingTask();
+                    startChargingTaskPoint();
+                }
+                return true ;
+            }else if(NavigationHelper.POINT_IN_AUTO_CHARGING_NAME.equals(pointName)){   // 充电辅助点
+
+                // 前往充电点
+                NavigationHelper.startPointTask(mMapInfo.getMapName(), NavigationHelper.POINT_AUTO_CHARGING_NAME);
+
+                return true ;
+            }else {
+
+                if(mTeamTask != null && mTeamTask == mCurrTask){    //
+
+                    if(pointName.equals(mTeamTask.getStartPointName())){//到达任务起始点
+
+                        if(mTeamTaskListener != null){
+                            mTeamTaskListener.onTeamTaskStart(mTeamTask.getTeamName());
+                        }
+                        // 开始正式收队
+                        startTeamTaskTips(mTeamTask.getTeamName());
+
+                        NavigationHelper.goToTeamTaskPath(mMapInfo.getMapName(), mTeamTask.getTeamName(), mTeamTask.getTeamPathName());
+
+                        return true ;
+
+                    }else if(pointName.equals(mTeamTask.getEndPointName())){//到达任务终点
+
+                        // 延迟20秒结束
+                        mHandler.postDelayed(mTeamTaskCompleteRunnable, 20*1000) ;
+
+                        return true ;
                     }
-                }
-
-
-                }else if(mCurrTask == mChargingTask){     // 充电任务
-
-                if(pointName.equals(mChargingTask.getInAutoChargingPointName())){ // 到达充电路径上点
-
-                    mChargingTask.setForward(false);
-
-                    // 前往充电点
-                    NavigationHelper.startPointTask(mMapInfo.getMapName(), mChargingTask.getAutoChargingPointName());
-
-                  return true;
-                }
-
-                if(pointName.equals(mChargingTask.getOutAutoChargingPointName())){ // 远离充电开始充电
-
-                    if(mTeamTask != null){  // 收队伍任务不为空， 开始收队伍任务
-
-                        startCurrTeamTask();
-
-                    }else if(mCurrTimerTask != null){ // 定时任务不为空，开始定时任务
-
-                        startCurrTimerTask();
-
-                    }else {// 啥都没有继续充电任务
-
-                        startChargingTask();
-                    }
-                    return true ;
-                }
-
-            } else if(mCurrTask == mTeamTask){  // 收队任务
-
-                if(pointName.equals(mTeamTask.getTeamHelperPointName())){    // 到达队伍起始起始点
-
-                    if(mTeamTaskListener != null){
-                        mTeamTaskListener.onTeamTaskStart(mTeamTask.getTeamName());
-                    }
-                    // 来时收队
-                    startTeamTaskTips(mTeamTask.getTeamName());
-
-
-                    mTeamTask.setArrivedTeamHelperPoint(true);
-                    NavigationHelper.goToTeamTaskPath(mMapInfo.getMapName(), mTeamTask.getTeamName(), mTeamTask.getTeamPathName());
-
-                    return true ;
-                }
-
-                if(pointName.equals(mTeamTask.getEndPointName())){     // 到达收队结束
-
-                    // 停下来20S
-                    mHandler.postDelayed(mTeamTaskCompleteRunnable, 20*1000) ;
-
-                    return true ;
                 }
             }
         }
 
         return false ;
+    }
+
+
+    /**
+     * 点的名称
+     * */
+    private void onArrivedPoint(String graphName,String pointName){
+
+        String key = PathDetailInfoData.toKey(mMapInfo.getMapName(), graphName, pointName) ;
+        LogHelper.i(TAG, LogHelper.__TAG__() + ", key : " + key);
+
+        PointActionInfo pointInfo = PathDetailInfoData.getInstance(mContext).queryPathDetailInfo(key) ;
+        LogHelper.i(TAG, LogHelper.__TAG__() + ", pointInfo : " + GSON.toJson(pointInfo));
+
+        startExecuteAction(pointInfo.getActions()) ;
     }
 
 
@@ -427,7 +414,7 @@ public class TaskHandler {
 
 
     /**
-     * 单个收队人结束
+     * 单个收队结束
      * */
     private void onTeamTaskComplete(){
 
@@ -528,12 +515,67 @@ public class TaskHandler {
         return mTeamTasks;
     }
 
+
+    /**离开充电桩监听*/
+    private interface LeaveChargingPointListener {
+
+        void onLeaveChargingPoint() ;
+    }
+
+    private LeaveChargingPointListener mLeaveChargingPointListener ;
+
+    /**
+     * 离开充电桩
+     * */
+    private boolean leaveChargingPoint(LeaveChargingPointListener leaveChargingPointListener){
+
+        this.mLeaveChargingPointListener = leaveChargingPointListener ;
+
+        switch (charger){
+            case 0: // 0：未充电
+
+                if(mLeaveChargingPointListener != null){
+                    mLeaveChargingPointListener.onLeaveChargingPoint();
+                    mLeaveChargingPointListener = null ;
+                }
+                return true ;
+            case 3 : // 3：自动充电
+
+                NavigationHelper.forward(0.2f, 0.3f, new NavigationHelper.MoveToListener() {
+                    @Override
+                    public void moveTo() {
+
+                        if(charger == 0){    //
+
+                            if(mLeaveChargingPointListener != null){
+                                mLeaveChargingPointListener.onLeaveChargingPoint();
+                                mLeaveChargingPointListener = null ;
+                            }
+                        }
+                    }
+                });
+
+                return true ;
+            case 4 : // 4：手动充电
+
+                showToastNotMainThread("当前处于手动充电，请拔掉充电桩");
+
+                break;
+            case 5 : // 5：自动充电下电池充满
+
+                break;
+
+        }
+
+        return false ;
+    }
+
+
     /**************************************定时任务（开始）**************************************/
 
     /**
      * 1、控制当前定时任务
      * @param isExecute true 开始任务; false 停止任务
-     *
      * */
     public void controlCurrTimerTask(boolean isExecute){
 
@@ -544,12 +586,12 @@ public class TaskHandler {
             if(isExecute){
 
                 mCurrTimerTask.setStop(false);
-                startTimerTask();
+                startTimerTaskPoint();
 
             }else {
 
                 mCurrTimerTask.setStop(true);
-                startChargingTask();
+                startChargingTaskPoint();
             }
         }
     }
@@ -610,20 +652,19 @@ public class TaskHandler {
 
         LogHelper.e(TAG, LogHelper.__TAG__());
 
-        // 当前执行收队任务，直接跳过 // 或者当前有收队任不为空
-        if((mCurrTask != null && mCurrTask.getTaskType() == BaseTask.TaskType.TEAM) ||
-                (mTeamTask != null)){
+        // 当前执行收队任务，直接跳过
+        if((mCurrTask != null && mCurrTask.getTaskType() == BaseTask.TaskType.TEAM)){
 
             return ;
         }
 
         // 没有定时任务，执行充电任务
         TimerTask timerTask = queryTaskInfo(hour, minute) ;
+        boolean isChanged = changeTimerTask(timerTask) ;
         LogHelper.e(TAG, LogHelper.__TAG__() + ", timerTask : " + timerTask );
         if(timerTask == null){
 
-            changeTimerTask(timerTask) ;
-            startChargingTask();
+            startChargingTaskPoint();
             return ;
         }
 
@@ -631,11 +672,10 @@ public class TaskHandler {
         // 如果当前是充电任务
         if(mCurrTask != null && mCurrTask.getTaskType() == BaseTask.TaskType.CHARGING){
 
-            changeTimerTask(timerTask) ;
             // 电量高于可执行任务的电量并且没有被暂停，开始执行正常任务
-            if(!timerTask.isStop() && batteryLevel > mChargingTask.getBatters()[1] ){
+            if(!timerTask.isStop() && (batteryLevel > mChargingTask.getBatters()[1]) ){
 
-                startTimerTask() ;
+                startTimerTaskPoint();
             }
             return ;
         }
@@ -643,60 +683,41 @@ public class TaskHandler {
         // 电量过低 执行充电任务
         if(batteryLevel < mChargingTask.getBatters()[0]){ // 电量低于最低的电量，开始执行充电任务
 
-            changeTimerTask(timerTask) ;
-            startChargingTask();
+            startChargingTaskPoint();
             return;
         }
 
         // 和之前一个不相同，开始下一个任务
-        if(mCurrTimerTask != timerTask){
+        if(isChanged){
 
-            changeTimerTask(timerTask) ;
-            startTimerTask();
+            startTimerTaskPoint();
         }
     }
 
     /**
-     *
-     * 开始当前定时任务
-     *
-     * 开始当前任务 并且判断是否处于充电状态
-     * 如果属于充电状态
-     *          先执行退出充电线路
-     * 如果不属于充电状态则直接开始任务
-     *
+     * 前往开始任务起始点
      * */
-    private void startTimerTask(){
+    private void startTimerTaskPoint(){
 
         LogHelper.e(TAG, LogHelper.__TAG__() );
 
-        if(mCurrTask == null || mCurrTask.getTaskType() == BaseTask.TaskType.TIMER){  //当前任务为空或者是定时任务
+        leaveChargingPoint(new LeaveChargingPointListener() {
+            @Override
+            public void onLeaveChargingPoint() {
 
-            startCurrTimerTask() ;
+                mCurrTask = mCurrTimerTask ;
+                stopExecuteAction() ; // 取消其他的动作语料
 
-        }else if( mCurrTask.getTaskType() == BaseTask.TaskType.CHARGING){   // 当前处于充电状态
-
-            leaveChargingTask();
-        }
+                NavigationHelper.goToNearbyPathCharging(mMapInfo.getMapName(), NavigationHelper.POINT_WORK_NAME);
+            }
+        });
     }
 
-    /**
-     * 开始当前任务
-     * */
-    private void startCurrTimerTask(){
-
-        LogHelper.e(TAG, LogHelper.__TAG__() );
-
-        mCurrTask = mCurrTimerTask ;
-        stopExecuteAction() ; //    取消其他的动作语料
-
-        NavigationHelper.goToTimerTaskPath(mMapInfo.getMapName(), mCurrTimerTask.getPathInfo().getName());
-    }
 
     /**
      * 切换定时任务任务
      * */
-    private void changeTimerTask(TimerTask timerTask){
+    private boolean changeTimerTask(TimerTask timerTask){
 
         if(mCurrTimerTask != timerTask){
 
@@ -705,69 +726,32 @@ public class TaskHandler {
                 mCurrTimerTask.setStop(false);
             }
             mCurrTimerTask = timerTask ;
+
+            return true ;
         }
 
+        return false ;
     }
 
     /**************************************定时任务（结束）**************************************/
 
     /**************************************充电任务（开始）**************************************/
+
     /**
-     * 开始充电任务充电任务
+     * 前往充电点（辅助）
      * */
-    private void startChargingTask(){
+    private void startChargingTaskPoint(){
 
         LogHelper.i(TAG, LogHelper.__TAG__() );
 
-        if((mCurrTask != mChargingTask) || !mChargingTask.isIn()){
+        if((mCurrTask != mChargingTask)){
 
             mCurrTask = mChargingTask ;
             stopExecuteAction() ; //    取消其他的动作语料
 
             // 开始充电任务
-            mChargingTask.setIn(true);
-            NavigationHelper.goToNearbyPathCharging(mMapInfo.getMapName(), mChargingTask.getInAutoChargingPathName() ,mChargingTask.getInAutoChargingPointName());
+            NavigationHelper.goToNearbyPathCharging(mMapInfo.getMapName(), NavigationHelper.POINT_IN_AUTO_CHARGING_NAME);
         }
-    }
-
-    /**
-     * 离开充电任务
-     * */
-    private void leaveChargingTask(){
-
-        // 正处于自动充电中
-        if(isAutoCharging && !mChargingTask.isForward()){
-
-            forward(0.2F, 0.3F, new MoveToListener() {  // 以0.3的速度前进0.2米的距离
-                @Override
-                public void moveTo() {
-                    mChargingTask.setForward(true);
-
-                    if(isAutoCharging){
-
-                        showToastNotMainThread("机器前进后，还处于充电中，任务中断！！！");
-
-                    }else{
-
-                        leaveChargingPoint() ;
-                    }
-                }
-            });
-        }else{
-
-            leaveChargingPoint() ;
-        }
-
-    }
-
-
-    /**
-     * 离开充电点
-     * */
-    private void leaveChargingPoint(){
-
-        mChargingTask.setIn(false);
-        NavigationHelper.goToNearbyPathCharging(mMapInfo.getMapName(), mChargingTask.getOutAutoChargingPathName() ,mChargingTask.getOutAutoChargingPointName());
     }
 
     /**************************************充电任务（结束）**************************************/
@@ -780,107 +764,7 @@ public class TaskHandler {
      * 需要收队的任务列表
      * */
     private ArrayList<String> mTeamNames ;
-
     private TeamTaskListener mTeamTaskListener ;
-
-    /**
-     * 开始收队任务
-     * */
-    public void startTeamTask(final String teamName,TeamTaskListener teamTaskListener){
-
-        LogHelper.i(TAG, LogHelper.__TAG__() );
-
-        mTeamTaskListener = teamTaskListener ;
-        startTeamTask(teamName) ;
-    }
-
-    /**
-     * 开始收队任务
-     * */
-    private void startTeamTask(final String teamName){
-
-        LogHelper.i(TAG, LogHelper.__TAG__() );
-
-        TeamTask teamTask = queryTeamTask(teamName) ;
-        if(teamTask == null){
-
-            String text = "查询不到《" + teamName + "》的收队任务！";
-            showToast(text);
-            changeTeamTask(teamTask);
-
-            if(mTeamTaskListener != null){
-                mTeamTaskListener.onFail(teamName,TeamTaskListener.NO_SUCH_NAME_TEAM_TASK,text);
-            }
-            nextTeamTask();
-            return;
-        }
-
-        if(mCurrTask == null || mCurrTask.getTaskType() == BaseTask.TaskType.TIMER){  //当前任务为空或者是定时任务
-
-            changeTeamTask(teamTask);
-            startCurrTeamTask() ;
-
-        }else if( mCurrTask.getTaskType() == BaseTask.TaskType.CHARGING){   // 当前处于充电状态
-
-            changeTeamTask(teamTask);
-            if(isAutoCharging){ // 正处于自动充电中
-
-                if(batteryLevel < ChargingTask.TEAM_BATTERY_CHARGING){  // 低于所需充电电量
-
-                    String text = "当前电量"+batteryLevel+"%,低于充电时候所需的"+ ChargingTask.TEAM_BATTERY_CHARGING+"%";
-                    showToastNotMainThread(text);
-                    if(mTeamTaskListener != null){
-                        mTeamTaskListener.onFail(teamName, TeamTaskListener.BATTERY_TO_LOW,text);
-                    }
-                    nextTeamTask();
-
-                }else {
-
-                    forward(0.2F, 0.3F, new MoveToListener() {  // 以0.3的速度前进0.2米的距离
-                        @Override
-                        public void moveTo() {
-
-                            if(isAutoCharging){
-
-                                String text = "机器前进后，但还处于充电中，任务中断！！！";
-                                showToastNotMainThread(text);
-                                if(mTeamTaskListener != null){
-                                    mTeamTaskListener.onFail(teamName, TeamTaskListener.BATTERY_TO_LOW,text);
-                                }
-                                nextTeamTask();
-
-                            }else{
-
-                                leaveChargingPoint() ;
-                            }
-                        }
-                    });
-                }
-            }else{  // 不处于充电状态
-
-                if(batteryLevel < ChargingTask.TEAM_BATTERY_NO_CHARGING){  // 低于所需充电电量
-
-                    String text = "当前电量"+batteryLevel+"%,低于不充电时候所需的"+ ChargingTask.TEAM_BATTERY_NO_CHARGING+"%";
-                    showToastNotMainThread(text);
-                    if(mTeamTaskListener != null){
-                        mTeamTaskListener.onFail(teamName, TeamTaskListener.BATTERY_TO_LOW,text);
-                    }
-                    nextTeamTask();
-
-                }else {
-
-                    leaveChargingPoint() ;
-                }
-            }
-
-        }else if( mCurrTask.getTaskType() == BaseTask.TaskType.TEAM) {   // 当前处于充电状态
-
-            changeTeamTask(teamTask);
-            startCurrTeamTask() ;
-        }
-    }
-
-
 
     /**
      * 开始收队任务列表
@@ -891,10 +775,19 @@ public class TaskHandler {
 
         mTeamNames = teamNames ;
         mTeamTaskListener = teamTaskListener ;
-        nextTeamTask() ;
+
+        leaveChargingPoint(new LeaveChargingPointListener() {
+            @Override
+            public void onLeaveChargingPoint() {
+
+                nextTeamTask() ;
+            }
+        });
     }
 
-
+    /**
+     * 下一个任务
+     * */
     private void nextTeamTask (){
 
         if(mTeamNames == null || mTeamNames.isEmpty()){ // 没有任务任务
@@ -904,45 +797,105 @@ public class TaskHandler {
             if(mTeamTaskListener != null){
                 mTeamTaskListener.onAllTeamTaskComplete();
             }
+            // 全部任务结束
+            if(mCurrTimerTask != null){ //如果当前定时任务不为空
 
-            // 收队任务全部结束，借助辅助路线回调起始点
-            NavigationHelper.goToNearbyPathCharging(mMapInfo.getMapName(), mTeamTask.getTeamHelperPathName(), mChargingTask.getOutAutoChargingPointName());
-            mTeamTask = null ;
+                startTimerTaskPoint(); // 开始定时任务
+            }else {
 
-//            if(mCurrTimerTask != null){ //如果当前定时任务不为空
-//
-//                startCurrTimerTask();
-//            }else {
-//
-//                startChargingTask();
-//            }
+                startChargingTaskPoint();// 充电任务
+            }
 
         }else{  //下一个队伍任务
 
-            String teamName = mTeamNames.remove(0) ;
+            final String teamName = mTeamNames.remove(0) ;
+            startTeamTask(teamName) ;
+        }
+    }
 
-            if(batteryLevel < ChargingTask.TEAM_BATTERY_NO_CHARGING) {  // 低于所需充电电量
+    /**
+     * 开始收队任务
+     * */
+    private void startTeamTask(final String teamName){
 
-                String text = "当前电量"+batteryLevel+"%,低于不充电时候所需的"+ ChargingTask.TEAM_BATTERY_NO_CHARGING+"%";
-                showToastNotMainThread(text);
+        LogHelper.i(TAG, LogHelper.__TAG__() );
+
+        TeamTask teamTask = queryTeamTask(teamName) ;
+        changeTeamTask(teamTask) ;
+        if(teamTask == null){
+
+            String text = "查询不到《" + teamName + "》的收队任务！";
+            showToast(text);
+
+            if(mTeamTaskListener != null){
+                mTeamTaskListener.onFail(teamName,TeamTaskListener.NO_SUCH_NAME_TEAM_TASK,text);
+            }
+            nextTeamTask();
+            return;
+        }
+
+        if(charger == 3 || charger == 4){ // 充电任务
+
+            if(batteryLevel > ChargingTask.TEAM_BATTERY_CHARGING){  //充电够了30%
+
+                leaveChargingPoint(new LeaveChargingPointListener() {
+                    @Override
+                    public void onLeaveChargingPoint() {
+
+                        startCurrTeamTaskPoint();
+                    }
+                });
+
+            }else {
+
+                String text = "当前电量"+batteryLevel+"%,低于充电时候所需的"+ ChargingTask.TEAM_BATTERY_CHARGING+"%";
                 if(mTeamTaskListener != null){
                     mTeamTaskListener.onFail(teamName, TeamTaskListener.BATTERY_TO_LOW,text);
                 }
-                nextTeamTask () ;
+                nextTeamTask();
+            }
+
+
+        }else {//没有充电
+
+            if(batteryLevel > ChargingTask.TEAM_BATTERY_NO_CHARGING){
+
+                startCurrTeamTaskPoint();
 
             }else{
 
-                startTeamTask(teamName) ;
+                String text = "当前电量"+batteryLevel+"%,低于不充电时候所需的"+ ChargingTask.TEAM_BATTERY_NO_CHARGING+"%";
+                if(mTeamTaskListener != null){
+                    mTeamTaskListener.onFail(teamName, TeamTaskListener.BATTERY_TO_LOW,text);
+                }
+                nextTeamTask();
             }
         }
-
     }
 
 
     /**
-     * 停止收队任务
+     * 开始收队任务
      * */
-    public boolean stopTeamTask(String teamName){
+    private void startCurrTeamTaskPoint(){
+
+        LogHelper.i(TAG,LogHelper.__TAG__());
+
+        mCurrTask = mTeamTask ;
+        stopExecuteAction() ; //    取消其他的动作语料
+
+        if(mTeamTaskListener != null){
+            mTeamTaskListener.onStartTeamLine(mTeamTask.getTeamHelperPointName());
+        }
+
+        NavigationHelper.goToNearbyPathCharging(mMapInfo.getMapName(), mTeamTask.getTeamHelperPointName());
+    }
+
+
+    /**
+     * 取消收队任务
+     * */
+    public boolean cancelTeamTask(String teamName){
 
         if(mTeamTask != null && mTeamTask.getTeamName().equals(teamName)){
 
@@ -961,27 +914,6 @@ public class TaskHandler {
         return true;
     }
 
-
-
-
-
-    /**
-     * 开始收队任务
-     * */
-    private void startCurrTeamTask(){
-
-        LogHelper.i(TAG,LogHelper.__TAG__());
-
-        mCurrTask = mTeamTask ;
-        stopExecuteAction() ; //    取消其他的动作语料
-
-        if(mTeamTaskListener != null){
-            mTeamTaskListener.onStartTeamLine(mTeamTask.getTeamHelperPathName(), mTeamTask.getTeamHelperPointName());
-        }
-
-        mTeamTask.setArrivedTeamHelperPoint(false);
-        NavigationHelper.goToNearbyPathCharging(mMapInfo.getMapName(), mTeamTask.getTeamHelperPathName(), mTeamTask.getTeamHelperPointName());
-    }
 
 
     /**
@@ -1035,81 +967,6 @@ public class TaskHandler {
         return null ;
     }
 
-    interface MoveToListener{
-
-        void moveTo() ;
-    }
-
-
-    /**
-     * */
-    private void forward(float distance, float speed, MoveToListener moveToListener){
-
-        LogHelper.i(TAG, LogHelper.__TAG__() + ", distance : " + distance + ", speed : " + speed );
-
-        mMoveToListener = moveToListener ;
-
-        GsApi.moveTo(null,distance,speed ) ;
-        startListener() ;
-    }
-
-    private Timer mTurnToTimer ;
-    private java.util.TimerTask mTurnToTask ;
-    private MoveToListener mMoveToListener ;
-    private ResponseListener<Boolean> mIsMoveToFinishedListener = new ResponseListener<Boolean>() {
-        @Override
-        public void success(Boolean aBoolean) {
-
-            if (aBoolean) {
-
-                if(mMoveToListener != null){
-
-                    mMoveToListener.moveTo();
-                }
-            }
-
-        }
-
-        @Override
-        public void faild(String s, String s1) {
-
-        }
-
-        @Override
-        public void error(Throwable throwable) {
-
-        }
-    } ;
-
-    private void startListener(){
-
-        stopListener() ;
-
-        mTurnToTimer = new Timer() ;
-        mTurnToTask = new java.util.TimerTask() {
-            @Override
-            public void run() {
-
-                GsApi.isMoveToFinishedListener(mIsMoveToFinishedListener) ;
-            }
-        };
-        mTurnToTimer.schedule(mTurnToTask, 1000);
-    }
-    private void stopListener(){
-
-        if(mTurnToTimer != null){
-
-            mTurnToTimer.cancel();
-            mTurnToTimer = null ;
-        }
-
-        if(mTurnToTask != null){
-
-            mTurnToTask.cancel();
-            mTurnToTask = null ;
-        }
-    }
-
 
     private static final Gson GSON = new Gson() ;
 
@@ -1143,19 +1000,7 @@ public class TaskHandler {
     }
 
 
-    /**
-     * 点的名称
-     * */
-    private void onArrivedPoint(String graphName,String pointName){
 
-        String key = PathDetailInfoData.toKey(mMapInfo.getMapName(), graphName, pointName) ;
-        LogHelper.i(TAG, LogHelper.__TAG__() + ", key : " + key);
-
-        PointActionInfo pointInfo = PathDetailInfoData.getInstance(mContext).queryPathDetailInfo(key) ;
-        LogHelper.i(TAG, LogHelper.__TAG__() + ", pointInfo : " + GSON.toJson(pointInfo));
-
-        startExecuteAction(pointInfo.getActions()) ;
-    }
 
     private ExecuteActionThread mExecuteActionThread ;
     private void startExecuteAction(ArrayList<ActionData> actions){

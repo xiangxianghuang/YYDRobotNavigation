@@ -129,7 +129,7 @@ public class TestActivity extends Activity implements View.OnClickListener {
                 break;
             case R.id.go_to_nearby_path_charging_btn:
 
-                NavigationHelper.goToNearbyPathCharging(mapName,pathName, pointName);
+//                NavigationHelper.goToNearbyPathCharging(mapName,pathName, pointName);
                 break;
         }
     }

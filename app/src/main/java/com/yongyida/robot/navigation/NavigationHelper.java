@@ -24,10 +24,15 @@ import com.yongyida.robot.util.LogHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Create By HuangXiangXiang 2018/8/24
  * 导航帮助类
+ *
+ *
+ *
  */
 public class NavigationHelper {
 
@@ -37,17 +42,29 @@ public class NavigationHelper {
     /**
      * 辅助收队路径
      * */
-    public final static String TEAM_LINE_PATH_NAME                      = "teamLine" ;
+    public final static String PATH_MAIN_LINE_NAME                      = "mainLine" ;
 
+    /**
+     * 充电点(真实)
+     * */
+    public static final String POINT_AUTO_CHARGING_NAME                 = "autoChargingPoint";
+    /**
+     * 充电点(辅助)
+     * */
+    public static final String POINT_IN_AUTO_CHARGING_NAME              = "inAutoChargingPoint";
+    /**
+     * 工作点
+     * */
+    public static final String POINT_WORK_NAME                          = "work";
 
-    /**充电*/
-    public static final String IN_AUTO_CHARGING_PATH_NAME              = "inAutoCharging";          // 充电路径
-    public static final String IN_AUTO_CHARGING_POINT_NAME             = "inAutoChargingPoint";     // 路径点
-
-    public static final String AUTO_CHARGING_POINT_NAME                = "autoChargingPoint";       // 充电点
-
-    public static final String OUT_AUTO_CHARGING_PATH_NAME             = "outAutoCharging";         // 充电路径(反自动回充)
-    public static final String OUT_AUTO_CHARGING_POINT_NAME            = "outAutoChargingPoint";    // 路径点(反自动回充点)
+    /**
+     * 进入充电桩的门
+     * */
+    public static final String POINT_IN_DOOR                            = "inDoor";
+    /**
+     * 离开充电桩的门
+     * */
+    public static final String POINT_OUT_DOOR                           = "outDoor";
 
 
 
@@ -276,10 +293,15 @@ public class NavigationHelper {
     }
 
 
+    public static void goToNearbyPathCharging(String mapName, String pointName){
+
+        goToNearbyPathCharging(mapName, PATH_MAIN_LINE_NAME, pointName);
+    }
+
     /**
      * 就近上预设轨道去充电
      * */
-    public static void goToNearbyPathCharging(String mapName, String pathName, String pointName){
+    private static void goToNearbyPathCharging(String mapName, String pathName, String pointName){
 
         LogHelper.w(TAG, LogHelper.__TAG__() + ", mapName : " + mapName + ", pathName : " + pathName + ", pointName : " + pointName);
 
@@ -538,6 +560,84 @@ public class NavigationHelper {
 
         LogHelper.w(TAG, LogHelper.__TAG__() + ", taskQueue : " + new Gson().toJson(taskQueue) );
         TaskQueueApi.startTaskQueue(responseListener, taskQueue) ;
+    }
+
+
+
+
+
+    /**判断*/
+    private static Timer mTurnToTimer ;
+    private static TimerTask mTurnToTask ;
+    private static MoveToListener mMoveToListener ;
+    private static ResponseListener<Boolean> mIsMoveToFinishedListener = new ResponseListener<Boolean>() {
+        @Override
+        public void success(Boolean aBoolean) {
+
+            LogHelper.i(TAG, LogHelper.__TAG__() + ", aBoolean : " + aBoolean) ;
+
+            if (aBoolean) {
+
+                if(mMoveToListener != null){
+
+                    mMoveToListener.moveTo();
+                }
+
+                stopListener() ;
+            }
+
+        }
+
+        @Override
+        public void faild(String s, String s1) {
+
+        }
+
+        @Override
+        public void error(Throwable throwable) {
+
+        }
+    } ;
+    interface MoveToListener{
+
+        void moveTo() ;
+    }
+    public static void forward(float distance, float speed, MoveToListener moveToListener){
+
+        LogHelper.i(TAG, LogHelper.__TAG__() + ", distance : " + distance + ", speed : " + speed );
+
+        mMoveToListener = moveToListener ;
+
+        GsApi.moveTo(null,distance,speed ) ;
+        startListener() ;
+    }
+    private static void startListener(){
+
+        stopListener() ;
+
+        mTurnToTimer = new Timer() ;
+        mTurnToTask = new TimerTask() {
+            @Override
+            public void run() {
+
+                GsApi.isMoveToFinishedListener(mIsMoveToFinishedListener) ;
+            }
+        };
+        mTurnToTimer.schedule(mTurnToTask, 1000);
+    }
+    private static void stopListener(){
+
+        if(mTurnToTimer != null){
+
+            mTurnToTimer.cancel();
+            mTurnToTimer = null ;
+        }
+
+        if(mTurnToTask != null){
+
+            mTurnToTask.cancel();
+            mTurnToTask = null ;
+        }
     }
 
 

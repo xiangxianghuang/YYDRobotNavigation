@@ -15,18 +15,32 @@ import android.text.TextUtils;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.gs.gsnavlibrary.api.GsApi;
 import com.gs.gsnavlibrary.listener.ResponseListener;
 import com.yongyida.robot.data.MapInfoData;
+import com.yongyida.robot.json.Base;
+import com.yongyida.robot.json.TransferData;
+import com.yongyida.robot.json.request.RequestCancelCloseTeam;
+import com.yongyida.robot.json.request.RequestCloseTeam;
+import com.yongyida.robot.json.request.RequestCloseTeamNames;
+import com.yongyida.robot.json.request.RequestRobotInfo;
+import com.yongyida.robot.json.response.BaseResponse;
+import com.yongyida.robot.json.response.ResponseCancelCloseTeam;
+import com.yongyida.robot.json.response.ResponseCloseTeam;
+import com.yongyida.robot.json.response.ResponseRobotInfo;
 import com.yongyida.robot.navigation.activity.MapActivity;
 import com.yongyida.robot.navigation.bean.BaseTask;
 import com.yongyida.robot.navigation.bean.MapInfo;
 import com.yongyida.robot.navigation.bean.TeamTask;
 import com.yongyida.robot.navigation.bean.TimerTask;
 import com.yongyida.robot.util.LogHelper;
+import com.yongyida.robot.util.MainServiceInfo;
 
 import java.util.ArrayList;
 import java.util.Locale;
+
+import okhttp3.Response;
 
 /**
  * Create By HuangXiangXiang 2018/8/20
@@ -63,7 +77,6 @@ public class NavigationService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-
 
         return new NavigationBinder() ;
     }
@@ -110,32 +123,90 @@ public class NavigationService extends Service {
             return mTaskHandler.getCurrTask() ;
         }
 
-
         public void setTimeChangedListener(TimeChangedListener timeChangedListener){
 
             mTimeChangedListener = timeChangedListener ;
         }
 
-
-        // 获取列表
+        /**获取列表*/
         public ArrayList<TeamTask> getTeamTask(){
 
             return mTaskHandler.getTeamTasks() ;
         }
 
-        public void startTeamTask(String teamName,TeamTaskListener teamTaskListener){
+        /**取消收队名称*/
+        public void startTeamTasks(ArrayList<String>teamNames){
 
-            mTaskHandler.startTeamTask(teamName, teamTaskListener) ;
+            if(isInitMap){
+                mTaskHandler.startTeamTasks(teamNames, mTeamTaskListener) ;
+            }
+
         }
 
+        /**取消收队名称*/
+        public boolean cancelTeamTask(String teamName){
 
-        public void stopTeamTask(String teamName){
-
-            mTaskHandler.stopTeamTask(teamName);
+            if(isInitMap){
+                return mTaskHandler.cancelTeamTask(teamName);
+            }
+            return false ;
         }
-
 
     }
+
+
+    private TeamTaskListener mTeamTaskListener = new TeamTaskListener(){
+
+        private ResponseCloseTeam responseCloseTeam = new ResponseCloseTeam();
+        private ResponseCloseTeam.Fail fail = new ResponseCloseTeam.Fail() ;
+        private ResponseCloseTeam.Schedule schedule = new ResponseCloseTeam.Schedule();
+
+        @Override
+        public void onStartTeamLine(String teamName) {
+
+            responseCloseTeam.setActionAndTeamName(ResponseCloseTeam.ACTION_GO_TO_START_POINT_BY_AUXILIARY_LINE, teamName);
+            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
+        }
+
+        @Override
+        public void onTeamTaskStart(String teamName) {
+
+            responseCloseTeam.setActionAndTeamName(ResponseCloseTeam.ACTION_START_CLOSE_TEAM, teamName);
+            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
+        }
+
+        @Override
+        public void onTeamTaskSchedule(String teamName, float percent) {
+
+            schedule.setPercent(percent);
+            responseCloseTeam.closingTeam(teamName, schedule);
+            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
+        }
+
+        @Override
+        public void onTeamTaskComplete(String teamName) {
+
+            responseCloseTeam.setActionAndTeamName(ResponseCloseTeam.ACTION_COMPLETE_CLOSE_TEAM, teamName);
+            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
+        }
+
+        @Override
+        public void onFail(String teamName, int failCode, String failMessage) {
+
+            fail.setFailCode(failCode);
+            fail.setFailMessage(failMessage);
+            responseCloseTeam.failCloseTeam(teamName, fail);
+            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
+        }
+
+        @Override
+        public void onAllTeamTaskComplete() {
+
+            responseCloseTeam.completeAllCloseTeam();
+            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
+        }
+    } ;
+
 
     @Override
     public void onCreate() {
@@ -148,6 +219,117 @@ public class NavigationService extends Service {
 
     }
 
+    private static final String DATA = "data" ;
+    private static final Gson GSON = new Gson() ;
+    private ResponseRobotInfo responseRobotInfo = new ResponseRobotInfo();
+
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+
+        if(intent != null){
+
+            String json = intent.getStringExtra(DATA) ;
+
+            TransferData transferData = null ;
+            try{
+                transferData = GSON.fromJson(json, TransferData.class) ;
+            }catch (Exception e){
+            }
+            if(transferData != null){
+
+                switch (transferData.getType()){
+
+                    case Base.TYPE_REQUEST_ROBOT_INFO : // 请求机器信息
+
+                        RequestRobotInfo requestRobotInfo = null ;
+                        try{
+                            requestRobotInfo = GSON.fromJson(transferData.getJsonData(),RequestRobotInfo.class) ;
+
+                        }catch (Exception e){
+
+                            e.printStackTrace();
+                        }
+                        if(requestRobotInfo != null){
+                            MainServiceInfo.response(NavigationService.this, responseRobotInfo);    // 响应机器信息
+                        }
+
+                        break;
+                    case Base.TYPE_REQUEST_CLOSE_TEAM : // 请求收队信息
+
+                        RequestCloseTeam requestCloseTeam = null ;
+                        try{
+                            requestCloseTeam = GSON.fromJson(transferData.getJsonData(),RequestCloseTeam.class) ;
+
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                        if(requestCloseTeam != null){
+
+                            ResponseCloseTeam responseCloseTeam = new ResponseCloseTeam() ;
+                            responseCloseTeam.setInitMap(isInitMap);
+                            if (isInitMap){
+
+                                mTaskHandler.startTeamTasks(requestCloseTeam.getTeamNames(),mTeamTaskListener);
+
+                            }else {
+
+                                MainServiceInfo.response(NavigationService.this, responseCloseTeam);
+                            }
+
+                        }
+
+                        break;
+                    case Base.TYPE_REQUEST_CANCEL_CLOSE_TEAM: // 请求取消收队
+
+                        RequestCancelCloseTeam requestCancelCloseTeam = null ;
+                        try{
+                            requestCancelCloseTeam = GSON.fromJson(transferData.getJsonData(),RequestCancelCloseTeam.class) ;
+
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                        if(requestCancelCloseTeam != null){
+
+                            ResponseCancelCloseTeam responseCancelCloseTeam = new ResponseCancelCloseTeam() ;
+                            responseCancelCloseTeam.setInitMap(isInitMap);
+
+                            if(isInitMap){ // 如果未初始化
+
+                                String teamName = requestCancelCloseTeam.getTeamName();
+                                responseCancelCloseTeam.setTeamName(teamName);
+                                boolean isSuccessCancel = mTaskHandler.cancelTeamTask(teamName) ;
+                                responseCancelCloseTeam.setSuccessCancel(isSuccessCancel);
+                            }
+
+                            MainServiceInfo.response(NavigationService.this, responseCancelCloseTeam);
+                        }
+
+                        break;
+//                    case Base.TYPE_REQUEST_CLOSE_TEAM_NAMES: // 请求收队信息
+//
+//                        RequestCloseTeamNames requestCloseTeamNames = null ;
+//                        try{
+//                            requestCloseTeamNames = GSON.fromJson(transferData.getJsonData(),RequestCloseTeamNames.class) ;
+//
+//                        }catch (Exception e){
+//
+//                        }
+//                        if(requestCloseTeamNames != null){
+//
+//
+//
+//
+//                        }
+//
+//                        break;
+                }
+            }
+
+        }
+        return super.onStartCommand(intent, flags, startId);
+    }
+
     /**
      * 是否初始化点图
      * */
@@ -156,10 +338,11 @@ public class NavigationService extends Service {
     private boolean initMap(){
 
         final MapInfo mapInfo = MapInfoData.getSelectMapInfo(NavigationService.this) ;
-        if(mapInfo.equals(mSelectMapInfo) && isInitMap){
+       if(mapInfo.equals(mSelectMapInfo) && isInitMap){
 
             return false ;
         }
+        isInitMap = false ;
 
         final String mapName = mapInfo.getMapName() ;
         final String startPointName = mapInfo.getStartPointName() ;
