@@ -1,6 +1,8 @@
 package com.yongyida.robot.navigation;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,10 +11,13 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.view.WindowManager;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -64,6 +69,7 @@ public class NavigationService extends Service {
         context.startService(service) ;
     }
 
+    private NavigationApplication mNavigationApplication ;
 
     private TimeChangedListener mTimeChangedListener ;
     public interface TimeChangedListener{
@@ -71,8 +77,76 @@ public class NavigationService extends Service {
         void onTimeChanged() ;
     }
 
-
     private TaskHandler mTaskHandler;
+
+    private static final int WHAT_USE_MAP_SUCCESS                   = 0x0001;
+    private static final int WHAT_USE_MAP_FAIL                      = 0x0002;
+    private static final int WHAT_USE_MAP_ERROR                     = 0x0003;
+    private static final int WHAT_REQUEST_INITIALIZE_SUCCESS        = 0x0101;
+    private static final int WHAT_REQUEST_INITIALIZE_FAIL           = 0x0102;
+    private static final int WHAT_REQUEST_INITIALIZE_ERROR          = 0x0103;
+
+    @SuppressLint("HandlerLeak")
+    private Handler mHandler = new Handler(){
+
+        @Override
+        public void handleMessage(Message msg) {
+
+            switch (msg.what){
+
+                case WHAT_USE_MAP_SUCCESS:
+                    String text = (String) msg.obj;
+                    mNavigationApplication.showToast(text);
+
+                    showProgress("加载"+ mSelectMapInfo.getMapName() +"地图成功，开始转圈初始化" + mSelectMapInfo.getStartPointName() + "起始点") ;
+
+                    loadMap( mSelectMapInfo.getMapName(), mSelectMapInfo.getStartPointName());
+                    break;
+                case WHAT_USE_MAP_FAIL:
+
+                    text = (String) msg.obj;
+                    mNavigationApplication.showToast(text);
+
+                    initMap() ;
+                    break;
+
+                case WHAT_USE_MAP_ERROR:
+                    text = (String) msg.obj;
+                    mNavigationApplication.showToast(text);
+
+                    initMap() ;
+                    break;
+
+                case WHAT_REQUEST_INITIALIZE_SUCCESS:
+
+                    text = (String) msg.obj;
+                    mNavigationApplication.showToast(text);
+
+                    isInitMap = true ;
+                    mTaskHandler.init(mSelectMapInfo);
+                    dismissProgress();
+
+                    break;
+                case WHAT_REQUEST_INITIALIZE_FAIL:
+
+                    text = (String) msg.obj;
+                    mNavigationApplication.showToast(text);
+
+                    initMap() ;
+                    break;
+                case WHAT_REQUEST_INITIALIZE_ERROR:
+                    text = (String) msg.obj;
+                    mNavigationApplication.showToast(text);
+
+                    initMap() ;
+                    break;
+
+            }
+
+
+        }
+    } ;
+
 
     @Nullable
     @Override
@@ -94,9 +168,9 @@ public class NavigationService extends Service {
 
             if(!initMap()){
 
-                mTaskHandler.init(mSelectMapInfo) ;
+                return;
             }
-
+            mTaskHandler.init(mSelectMapInfo) ;
         }
 
         //3、手动控制
@@ -104,21 +178,31 @@ public class NavigationService extends Service {
 
             if(!initMap()){
 
-                mTaskHandler.controlCurrTimerTask(isRun);
-                return true ;
+                return false ;
             }
-            return false ;
+
+            mTaskHandler.controlCurrTimerTask(isRun);
+            return true ;
         }
 
 
         /**当前定时任务*/
         public TimerTask getCurrTimerTask(){
+            if(!initMap()){
 
+                return null ;
+            }
             return mTaskHandler.getCurrTimerTask() ;
+
         }
 
         /**当前任务*/
         public BaseTask getCurrTask(){
+
+            if(!initMap()){
+
+                return null ;
+            }
 
             return mTaskHandler.getCurrTask() ;
         }
@@ -131,27 +215,35 @@ public class NavigationService extends Service {
         /**获取列表*/
         public ArrayList<TeamTask> getTeamTask(){
 
+            if(!initMap()){
+
+                return null ;
+            }
+
             return mTaskHandler.getTeamTasks() ;
         }
 
         /**取消收队名称*/
         public void startTeamTasks(ArrayList<String>teamNames){
 
-            if(isInitMap){
-                mTaskHandler.startTeamTasks(teamNames, mTeamTaskListener) ;
+            if(!initMap()){
+
+                return  ;
             }
+            mTaskHandler.startTeamTasks(teamNames, mTeamTaskListener) ;
 
         }
 
         /**取消收队名称*/
         public boolean cancelTeamTask(String teamName){
 
-            if(isInitMap){
-                return mTaskHandler.cancelTeamTask(teamName);
-            }
-            return false ;
-        }
+            if(!initMap()){
 
+                return false ;
+            }
+
+            return mTaskHandler.cancelTeamTask(teamName);
+        }
     }
 
 
@@ -207,10 +299,11 @@ public class NavigationService extends Service {
         }
     } ;
 
-
     @Override
     public void onCreate() {
         super.onCreate();
+
+        mNavigationApplication = (NavigationApplication) getApplication();
 
         initMap();
 
@@ -222,7 +315,6 @@ public class NavigationService extends Service {
     private static final String DATA = "data" ;
     private static final Gson GSON = new Gson() ;
     private ResponseRobotInfo responseRobotInfo = new ResponseRobotInfo();
-
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -335,13 +427,18 @@ public class NavigationService extends Service {
      * */
     private boolean isInitMap = false ;
     private MapInfo mSelectMapInfo ;
+
+    /**加载地图*/
     private boolean initMap(){
 
-        final MapInfo mapInfo = MapInfoData.getSelectMapInfo(NavigationService.this) ;
-       if(mapInfo.equals(mSelectMapInfo) && isInitMap){
+        dismissProgress() ;
 
-            return false ;
+        final MapInfo mapInfo = MapInfoData.getSelectMapInfo(NavigationService.this) ;
+        if(mapInfo.equals(mSelectMapInfo) && isInitMap){
+
+            return isInitMap ;
         }
+        mSelectMapInfo = mapInfo ;
         isInitMap = false ;
 
         final String mapName = mapInfo.getMapName() ;
@@ -356,30 +453,47 @@ public class NavigationService extends Service {
 
         }else{
 
+
             DialogInterface.OnClickListener onClickListener = new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
 
                     if(which == DialogInterface.BUTTON_POSITIVE){
 
+                        // 加载地图
                         GsApi.useMap(new ResponseListener<String>() {
                             @Override
                             public void success(String s) {
                                 LogHelper.i(TAG, LogHelper.__TAG__() + ",s : " + s);
-                                loadMap(mapInfo, mapName, startPointName);
+
+                                Message message = mHandler.obtainMessage(WHAT_USE_MAP_SUCCESS) ;
+                                message.obj = "加载地图成功" ;
+                                mHandler.sendMessage(message) ;
+
                             }
 
                             @Override
                             public void faild(String s, String s1) {
 
                                 LogHelper.w(TAG, LogHelper.__TAG__() + ",s : " + s);
+                                Message message = mHandler.obtainMessage(WHAT_USE_MAP_FAIL) ;
+                                message.obj = "失败s：" + s + ",s1 : " + s1 ;
+                                mHandler.sendMessage(message) ;
+
                             }
 
                             @Override
                             public void error(Throwable throwable) {
 
+                                LogHelper.e(TAG, LogHelper.__TAG__() + ",throwable : " + throwable.getMessage());
+                                Message message = mHandler.obtainMessage(WHAT_USE_MAP_ERROR) ;
+                                message.obj = "异常：" + throwable.getMessage() ;
+                                mHandler.sendMessage(message) ;
+
                             }
                         }, mapName) ;
+
+                        showProgress("正在加载"+ mapName +"地图") ;
 
                     }
                 }
@@ -395,19 +509,42 @@ public class NavigationService extends Service {
             AlertDialog alertDialog = builder.create();
             alertDialog.setCancelable(false);
             alertDialog.setCanceledOnTouchOutside(false);
-//            alertDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
             alertDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_TOAST);
             alertDialog.show();
         }
-
-        return true ;
-
+        return isInitMap ;
     }
 
 
-    private void loadMap(final MapInfo mapInfo, final String mapName, final String startPointName){
+    private ProgressDialog mProgressDialog ;
 
-        mTaskHandler.queryTeamTasks(mapName);
+    private void showProgress(String text){
+
+        if(mProgressDialog == null){
+
+            mProgressDialog = new ProgressDialog(this) ;
+            mProgressDialog.setTitle("加载地图");
+            mProgressDialog.setCancelable(false);
+            mProgressDialog.setCanceledOnTouchOutside(false);
+            mProgressDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_TOAST);
+        }
+
+        mProgressDialog.setMessage(text);
+        mProgressDialog.show();
+
+    }
+
+    private void dismissProgress(){
+
+        if(mProgressDialog != null && mProgressDialog.isShowing()){
+
+            mProgressDialog.dismiss();
+        }
+    }
+
+
+    /**设置起始点*/
+    private void loadMap(final String mapName, final String startPointName){
 
         // 加载地图
         ResponseListener<String> responseListener = new ResponseListener<String>() {
@@ -416,19 +553,29 @@ public class NavigationService extends Service {
 
                 LogHelper.i(TAG, LogHelper.__TAG__() + ",s : " + s);
 
-                isInitMap = true ;
-                mSelectMapInfo = mapInfo ;
-                mTaskHandler.init(mapInfo);
+                Message message = mHandler.obtainMessage(WHAT_REQUEST_INITIALIZE_SUCCESS) ;
+                message.obj = "设置起始点成功" ;
+                mHandler.sendMessage(message) ;
             }
 
             @Override
             public void faild(String s, String s1) {
 
                 LogHelper.w(TAG, LogHelper.__TAG__() + ",s : " + s);
+
+                Message message = mHandler.obtainMessage(WHAT_REQUEST_INITIALIZE_FAIL) ;
+                message.obj = "失败s：" + s + ",s1 : " + s1 ;
+                mHandler.sendMessage(message) ;
             }
 
             @Override
             public void error(Throwable throwable) {
+
+                LogHelper.e(TAG, LogHelper.__TAG__() + ",throwable : " + throwable.getMessage());
+
+                Message message = mHandler.obtainMessage(WHAT_REQUEST_INITIALIZE_ERROR) ;
+                message.obj = "异常：" + throwable.getMessage() ;
+                mHandler.sendMessage(message) ;
 
             }
         };

@@ -67,7 +67,6 @@ public class NavigationHelper {
     public static final String POINT_OUT_DOOR                           = "outDoor";
 
 
-
     public interface OnResponseAllPathAndPointListener{
 
         void onSuccess(ArrayList<PathInfo> pathInfos) ;

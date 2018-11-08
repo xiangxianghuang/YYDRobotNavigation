@@ -223,7 +223,6 @@ public class MapInfoAdapter extends BaseAdapter {
 
         mPopupWindow.showAsDropDown(mItemLayout,0,0, Gravity.RIGHT);
 
-
     }
 
 

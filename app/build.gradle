@@ -10,12 +10,50 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+
+    signingConfigs {
+        debug {
+        }
+        rk_platform {
+
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+            storeFile file('../keystore/rk_platform.jks')
+            storePassword 'android'
+        }
+
+        mtk_platform {
+
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+            storeFile file('../keystore/mtk_platform.jks')
+            storePassword 'android'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+
+        rk_platform {
+            // release版本签名
+            signingConfig signingConfigs.rk_platform
+
+            matchingFallbacks = ['release', 'debug']
+        }
+
+        mtk_platform {
+            // release版本签名
+            signingConfig signingConfigs.mtk_platform
+
+            matchingFallbacks = ['release', 'debug']
+        }
     }
+
+
+
 
     repositories {
         flatDir {

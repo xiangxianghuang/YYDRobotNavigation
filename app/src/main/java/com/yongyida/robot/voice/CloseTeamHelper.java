@@ -3,6 +3,7 @@ package com.yongyida.robot.voice;
 import android.content.Context;
 import android.content.Intent;
 
+import com.yongyida.robot.navigation.NavigationHelper;
 import com.yongyida.robot.navigation.activity.CloseTeamActivity;
 
 import java.util.HashMap;
@@ -26,30 +27,41 @@ public class CloseTeamHelper {
     private Context context ;
 
 
-    private HashMap<String, CloseTeamData> mCloseTeamDatas = getCloseTeamData() ;
-
-
+    private final HashMap<String, CloseTeamData> mCloseTeamDatas ;
 
 
     private CloseTeamHelper(Context context) {
 
         this.context = context ;
+        mCloseTeamDatas = getCloseTeamData(context) ;
     }
 
-    private HashMap<String, CloseTeamData> getCloseTeamData(){
+    private HashMap<String, CloseTeamData> getCloseTeamData(Context context){
 
         HashMap<String, CloseTeamData> closeTeamDatas = new HashMap<>() ;
 
-        for (int i = 5; i <=34 ; i++) {
+        for (int i = 5; i <= 34 ; i++) {
 
             String name = "close_team_" + i ;
-            String audioName = name + ".mp4" ;
+            String audioName = name + ".mp3" ;
 
             int id = context.getResources().getIdentifier(name,"drawable", context.getPackageName()) ;
             CloseTeamData closeTeamData = new CloseTeamData(audioName, id);
 
             closeTeamDatas.put(i+"_c", closeTeamData) ;
         }
+
+        String name = "door_in" ;
+        String audioName = "奥丁回去充电.mp3" ;
+        int id = context.getResources().getIdentifier(name,"drawable", context.getPackageName()) ;
+        CloseTeamData closeTeamData = new CloseTeamData(audioName, id);
+        closeTeamDatas.put(NavigationHelper.POINT_IN_DOOR, closeTeamData) ;
+
+        name = "door_out" ;
+        audioName = "进场工作.mp3" ;
+        id = context.getResources().getIdentifier(name,"drawable", context.getPackageName()) ;
+        closeTeamData = new CloseTeamData(audioName, id);
+        closeTeamDatas.put(NavigationHelper.POINT_OUT_DOOR, closeTeamData) ;
 
         return closeTeamDatas;
     }

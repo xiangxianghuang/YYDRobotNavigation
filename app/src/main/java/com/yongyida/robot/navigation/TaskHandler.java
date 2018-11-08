@@ -362,7 +362,7 @@ public class TaskHandler {
 
                 if(mTeamTask != null && mTeamTask == mCurrTask){    //
 
-                    if(pointName.equals(mTeamTask.getStartPointName())){//到达任务起始点
+                    if(pointName.equals(mTeamTask.getTeamHelperPointName())){//到达任务起始点
 
                         if(mTeamTaskListener != null){
                             mTeamTaskListener.onTeamTaskStart(mTeamTask.getTeamName());
@@ -389,18 +389,51 @@ public class TaskHandler {
     }
 
 
+    /**结束等待开门的*/
+    private Runnable mFinishWaitDoorOpenRunnable = new Runnable() {
+        @Override
+        public void run() {
+
+            resumeTask();
+            CloseTeamHelper.getInstance(mContext).stopCloseTeam();
+        }
+    };
+
     /**
-     * 点的名称
+     * 路径上面点的名称
+     *
      * */
-    private void onArrivedPoint(String graphName,String pointName){
+    private void onArrivedPoint(String graphName, String pointName){
 
-        String key = PathDetailInfoData.toKey(mMapInfo.getMapName(), graphName, pointName) ;
-        LogHelper.i(TAG, LogHelper.__TAG__() + ", key : " + key);
+        LogHelper.i(TAG, LogHelper.__TAG__() + ", graphName : " + graphName + ", pointName : " + pointName);
 
-        PointActionInfo pointInfo = PathDetailInfoData.getInstance(mContext).queryPathDetailInfo(key) ;
-        LogHelper.i(TAG, LogHelper.__TAG__() + ", pointInfo : " + GSON.toJson(pointInfo));
+        if(NavigationHelper.PATH_MAIN_LINE_NAME.equals(graphName)){
 
-        startExecuteAction(pointInfo.getActions()) ;
+            if(NavigationHelper.POINT_IN_DOOR.equals(pointName)){   //进入充电桩的门
+
+                pauseTask();
+                CloseTeamHelper.getInstance(mContext).startCloseTeam(NavigationHelper.POINT_IN_DOOR, null);
+                mHandler.postDelayed(mFinishWaitDoorOpenRunnable, 10*1000) ;
+
+
+            }else if(NavigationHelper.POINT_OUT_DOOR.equals(pointName)){//离开充电桩的门
+
+                pauseTask();
+                CloseTeamHelper.getInstance(mContext).startCloseTeam(NavigationHelper.POINT_OUT_DOOR, null);
+                mHandler.postDelayed(mFinishWaitDoorOpenRunnable, 10*1000) ;
+            }
+
+        }else {
+
+            String key = PathDetailInfoData.toKey(mMapInfo.getMapName(), graphName, pointName) ;
+            LogHelper.i(TAG, LogHelper.__TAG__() + ", key : " + key);
+
+            PointActionInfo pointInfo = PathDetailInfoData.getInstance(mContext).queryPathDetailInfo(key) ;
+            LogHelper.i(TAG, LogHelper.__TAG__() + ", pointInfo : " + GSON.toJson(pointInfo));
+
+            startExecuteAction(pointInfo.getActions()) ;
+        }
+
     }
 
 
@@ -699,7 +732,7 @@ public class TaskHandler {
      * */
     private void startTimerTaskPoint(){
 
-        LogHelper.e(TAG, LogHelper.__TAG__() );
+        LogHelper.e(TAG, LogHelper.__TAG__());
 
         leaveChargingPoint(new LeaveChargingPointListener() {
             @Override
@@ -744,21 +777,20 @@ public class TaskHandler {
 
         LogHelper.i(TAG, LogHelper.__TAG__() );
 
-        if((mCurrTask != mChargingTask)){
-
-            mCurrTask = mChargingTask ;
-            stopExecuteAction() ; //    取消其他的动作语料
-
-            // 开始充电任务
-            NavigationHelper.goToNearbyPathCharging(mMapInfo.getMapName(), NavigationHelper.POINT_IN_AUTO_CHARGING_NAME);
-        }
+//        if((mCurrTask != mChargingTask)){
+//
+//            mCurrTask = mChargingTask ;
+//            stopExecuteAction() ; //    取消其他的动作语料
+//
+//            // 开始充电任务
+//            NavigationHelper.goToNearbyPathCharging(mMapInfo.getMapName(), NavigationHelper.POINT_IN_AUTO_CHARGING_NAME);
+//        }
     }
 
     /**************************************充电任务（结束）**************************************/
 
 
     /**************************************收队任务（开始）**************************************/
-
 
     /**
      * 需要收队的任务列表
@@ -967,7 +999,6 @@ public class TaskHandler {
         return null ;
     }
 
-
     private static final Gson GSON = new Gson() ;
 
 
@@ -1045,7 +1076,6 @@ public class TaskHandler {
 
         mHandler.removeCallbacks(mTeamTaskCompleteRunnable);
 
-
     }
 
 
@@ -1098,7 +1128,6 @@ public class TaskHandler {
                 }
 
             }
-
 
             if(playAction != null){
 

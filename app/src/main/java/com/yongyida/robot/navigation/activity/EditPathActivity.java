@@ -24,6 +24,7 @@ import com.gs.gsnavlibrary.bean.taskqueue.Task;
 import com.gs.gsnavlibrary.bean.taskqueue.TaskQueue;
 import com.gs.gsnavlibrary.listener.ResponseListener;
 import com.yongyida.robot.data.PathDetailInfoData;
+import com.yongyida.robot.navigation.NavigationHelper;
 import com.yongyida.robot.navigation.R;
 import com.yongyida.robot.navigation.adapter.ActionAdapter;
 import com.yongyida.robot.navigation.bean.PointActionInfo;
@@ -80,6 +81,7 @@ public class EditPathActivity extends Activity implements View.OnClickListener, 
     private ListView mActionsLvw;
 
 
+    private ArrayList<String> mKeys = new ArrayList<>();
     private ArrayList<String> mPointNames = new ArrayList<>();
     private HashMap<String, PointActionInfo> mPointActionInfos = new HashMap<>() ;
 
@@ -152,6 +154,7 @@ public class EditPathActivity extends Activity implements View.OnClickListener, 
     private Iterator<Task> mIterator ;
     private void requestPathsPoints(List<Task> tasks){
 
+        mKeys.clear();
         mPointNames.clear();
         mIterator = tasks.iterator() ;
         requestNextPathPoints() ;
@@ -204,7 +207,8 @@ public class EditPathActivity extends Activity implements View.OnClickListener, 
 
                     PointActionInfo pointActionInfo = mPathDetailInfoData.queryPathDetailInfo(key) ;
 
-                    mPointNames.add(key) ;
+                    mKeys.add(key) ;
+                    mPointNames.add(pointName) ;
                     mPointActionInfos.put(key, pointActionInfo) ;
                 }
 
@@ -328,8 +332,8 @@ public class EditPathActivity extends Activity implements View.OnClickListener, 
             mNextBtn.setEnabled(true);
         }
 
-        String pointName = mPointNames.get(position) ;
-        mSelectPoint = mPointActionInfos.get(pointName) ;
+        String key = mKeys.get(position) ;
+        mSelectPoint = mPointActionInfos.get(key) ;
         mActionAdapter.setActions(mSelectPoint.getActions());
 
     }
