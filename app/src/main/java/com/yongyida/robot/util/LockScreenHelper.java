@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 
+import com.yongyida.robot.navigation.activity.WorkActivity;
+
 /**
  * Create By HuangXiangXiang 2018/9/6
  */
@@ -34,7 +36,8 @@ public class LockScreenHelper {
         @Override
         public void run() {
 
-            startLockScreen() ;
+//            startLockScreen() ;
+            startWork() ;
         }
     } ;
 
@@ -53,6 +56,12 @@ public class LockScreenHelper {
 
     }
 
+    private void startWork(){
+
+        Intent intent = new Intent(mContext, WorkActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ;
+        mContext.startActivity(intent);
+    }
 
     /**
      * 开启表情计时
@@ -61,7 +70,7 @@ public class LockScreenHelper {
         LogHelper.i(TAG, LogHelper.__TAG__());
 
         cancelLockScreenTimer() ;
-//        mHandler.postDelayed(mRunnable, DELAY_TIME) ;
+        mHandler.postDelayed(mRunnable, DELAY_TIME) ;
     }
 
 

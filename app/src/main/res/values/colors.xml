@@ -4,4 +4,8 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
 
+
+    <color name="colorNone">#0080ff</color>
+    <color name="colorTeamTaskSchedule">#ffff00</color>
+
 </resources>

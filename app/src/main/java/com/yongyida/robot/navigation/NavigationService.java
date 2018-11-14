@@ -1,51 +1,17 @@
 package com.yongyida.robot.navigation;
 
-import android.annotation.SuppressLint;
-import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.BatteryManager;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
-import android.view.WindowManager;
-import android.widget.ProgressBar;
-import android.widget.Toast;
 
-import com.google.gson.Gson;
-import com.gs.gsnavlibrary.api.GsApi;
-import com.gs.gsnavlibrary.listener.ResponseListener;
-import com.yongyida.robot.data.MapInfoData;
-import com.yongyida.robot.json.Base;
-import com.yongyida.robot.json.TransferData;
-import com.yongyida.robot.json.request.RequestCancelCloseTeam;
-import com.yongyida.robot.json.request.RequestCloseTeam;
-import com.yongyida.robot.json.request.RequestCloseTeamNames;
-import com.yongyida.robot.json.request.RequestRobotInfo;
-import com.yongyida.robot.json.response.BaseResponse;
-import com.yongyida.robot.json.response.ResponseCancelCloseTeam;
-import com.yongyida.robot.json.response.ResponseCloseTeam;
-import com.yongyida.robot.json.response.ResponseRobotInfo;
-import com.yongyida.robot.navigation.activity.MapActivity;
 import com.yongyida.robot.navigation.bean.BaseTask;
-import com.yongyida.robot.navigation.bean.MapInfo;
 import com.yongyida.robot.navigation.bean.TeamTask;
 import com.yongyida.robot.navigation.bean.TimerTask;
-import com.yongyida.robot.util.LogHelper;
-import com.yongyida.robot.util.MainServiceInfo;
 
 import java.util.ArrayList;
-import java.util.Locale;
-
-import okhttp3.Response;
 
 /**
  * Create By HuangXiangXiang 2018/8/20
@@ -69,83 +35,7 @@ public class NavigationService extends Service {
         context.startService(service) ;
     }
 
-    private NavigationApplication mNavigationApplication ;
-
-    private TimeChangedListener mTimeChangedListener ;
-    public interface TimeChangedListener{
-
-        void onTimeChanged() ;
-    }
-
     private TaskHandler mTaskHandler;
-
-    private static final int WHAT_USE_MAP_SUCCESS                   = 0x0001;
-    private static final int WHAT_USE_MAP_FAIL                      = 0x0002;
-    private static final int WHAT_USE_MAP_ERROR                     = 0x0003;
-    private static final int WHAT_REQUEST_INITIALIZE_SUCCESS        = 0x0101;
-    private static final int WHAT_REQUEST_INITIALIZE_FAIL           = 0x0102;
-    private static final int WHAT_REQUEST_INITIALIZE_ERROR          = 0x0103;
-
-    @SuppressLint("HandlerLeak")
-    private Handler mHandler = new Handler(){
-
-        @Override
-        public void handleMessage(Message msg) {
-
-            switch (msg.what){
-
-                case WHAT_USE_MAP_SUCCESS:
-                    String text = (String) msg.obj;
-                    mNavigationApplication.showToast(text);
-
-                    showProgress("加载"+ mSelectMapInfo.getMapName() +"地图成功，开始转圈初始化" + mSelectMapInfo.getStartPointName() + "起始点") ;
-
-                    loadMap( mSelectMapInfo.getMapName(), mSelectMapInfo.getStartPointName());
-                    break;
-                case WHAT_USE_MAP_FAIL:
-
-                    text = (String) msg.obj;
-                    mNavigationApplication.showToast(text);
-
-                    initMap() ;
-                    break;
-
-                case WHAT_USE_MAP_ERROR:
-                    text = (String) msg.obj;
-                    mNavigationApplication.showToast(text);
-
-                    initMap() ;
-                    break;
-
-                case WHAT_REQUEST_INITIALIZE_SUCCESS:
-
-                    text = (String) msg.obj;
-                    mNavigationApplication.showToast(text);
-
-                    isInitMap = true ;
-                    mTaskHandler.init(mSelectMapInfo);
-                    dismissProgress();
-
-                    break;
-                case WHAT_REQUEST_INITIALIZE_FAIL:
-
-                    text = (String) msg.obj;
-                    mNavigationApplication.showToast(text);
-
-                    initMap() ;
-                    break;
-                case WHAT_REQUEST_INITIALIZE_ERROR:
-                    text = (String) msg.obj;
-                    mNavigationApplication.showToast(text);
-
-                    initMap() ;
-                    break;
-
-            }
-
-
-        }
-    } ;
 
 
     @Nullable
@@ -157,26 +47,26 @@ public class NavigationService extends Service {
 
     public class NavigationBinder extends Binder{
 
-        //1、选中的地图
+        //1、选中的地图或者点
         public void changeSelectMapInfo(){
 
-            initMap();
+            mTaskHandler.loadMapAndStartPoint();
         }
 
         // 2、修改任务列表
         public void changeTaskInfos(){
 
-            if(!initMap()){
+            if(!mTaskHandler.loadMapAndStartPoint()){
 
                 return;
             }
-            mTaskHandler.init(mSelectMapInfo) ;
+            mTaskHandler.loadData() ;
         }
 
         //3、手动控制
         public boolean controlTask(boolean isRun){
 
-            if(!initMap()){
+            if(!mTaskHandler.loadMapAndStartPoint()){
 
                 return false ;
             }
@@ -188,7 +78,8 @@ public class NavigationService extends Service {
 
         /**当前定时任务*/
         public TimerTask getCurrTimerTask(){
-            if(!initMap()){
+
+            if(!mTaskHandler.loadMapAndStartPoint()){
 
                 return null ;
             }
@@ -199,23 +90,29 @@ public class NavigationService extends Service {
         /**当前任务*/
         public BaseTask getCurrTask(){
 
-            if(!initMap()){
+            if(!mTaskHandler.loadMapAndStartPoint()){
 
                 return null ;
             }
-
             return mTaskHandler.getCurrTask() ;
         }
 
-        public void setTimeChangedListener(TimeChangedListener timeChangedListener){
 
-            mTimeChangedListener = timeChangedListener ;
+        //
+        public String getCurrTaskInfo(){
+
+            return mTaskHandler.getCurrTaskInfo() ;
+        }
+
+        public void setOnTaskChangeListener(TaskHandler.OnTaskChangeListener onTaskChangeListener) {
+
+            mTaskHandler.setOnTaskChangeListener(onTaskChangeListener);
         }
 
         /**获取列表*/
         public ArrayList<TeamTask> getTeamTask(){
 
-            if(!initMap()){
+            if(!mTaskHandler.loadMapAndStartPoint()){
 
                 return null ;
             }
@@ -224,445 +121,55 @@ public class NavigationService extends Service {
         }
 
         /**取消收队名称*/
-        public void startTeamTasks(ArrayList<String>teamNames){
+        public void startTeamTasks(ArrayList<String>teamNames, TeamTaskListener teamTaskListener){
 
-            if(!initMap()){
+            if(!mTaskHandler.loadMapAndStartPoint()){
 
                 return  ;
             }
-            mTaskHandler.startTeamTasks(teamNames, mTeamTaskListener) ;
+            mTaskHandler.startTeamTasks(false, teamNames, teamTaskListener) ;
 
         }
 
         /**取消收队名称*/
         public boolean cancelTeamTask(String teamName){
 
-            if(!initMap()){
+            if(!mTaskHandler.loadMapAndStartPoint()){
 
                 return false ;
             }
 
             return mTaskHandler.cancelTeamTask(teamName);
         }
+
+        public void setTimeChangedListener(TaskHandler.TimeChangedListener timeChangedListener) {
+
+            mTaskHandler.setTimeChangedListener(timeChangedListener);
+        }
     }
-
-
-    private TeamTaskListener mTeamTaskListener = new TeamTaskListener(){
-
-        private ResponseCloseTeam responseCloseTeam = new ResponseCloseTeam();
-        private ResponseCloseTeam.Fail fail = new ResponseCloseTeam.Fail() ;
-        private ResponseCloseTeam.Schedule schedule = new ResponseCloseTeam.Schedule();
-
-        @Override
-        public void onStartTeamLine(String teamName) {
-
-            responseCloseTeam.setActionAndTeamName(ResponseCloseTeam.ACTION_GO_TO_START_POINT_BY_AUXILIARY_LINE, teamName);
-            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
-        }
-
-        @Override
-        public void onTeamTaskStart(String teamName) {
-
-            responseCloseTeam.setActionAndTeamName(ResponseCloseTeam.ACTION_START_CLOSE_TEAM, teamName);
-            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
-        }
-
-        @Override
-        public void onTeamTaskSchedule(String teamName, float percent) {
-
-            schedule.setPercent(percent);
-            responseCloseTeam.closingTeam(teamName, schedule);
-            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
-        }
-
-        @Override
-        public void onTeamTaskComplete(String teamName) {
-
-            responseCloseTeam.setActionAndTeamName(ResponseCloseTeam.ACTION_COMPLETE_CLOSE_TEAM, teamName);
-            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
-        }
-
-        @Override
-        public void onFail(String teamName, int failCode, String failMessage) {
-
-            fail.setFailCode(failCode);
-            fail.setFailMessage(failMessage);
-            responseCloseTeam.failCloseTeam(teamName, fail);
-            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
-        }
-
-        @Override
-        public void onAllTeamTaskComplete() {
-
-            responseCloseTeam.completeAllCloseTeam();
-            MainServiceInfo.response(NavigationService.this, responseCloseTeam);
-        }
-    } ;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        mNavigationApplication = (NavigationApplication) getApplication();
-
-        initMap();
-
-        mTaskHandler = TaskHandler.getInstance(this) ;
-        registerReceiver();
-
+        mTaskHandler = new TaskHandler(this) ;
+//        mTaskHandler = TaskHandler.getInstance(this) ;
+        mTaskHandler.start();
     }
-
-    private static final String DATA = "data" ;
-    private static final Gson GSON = new Gson() ;
-    private ResponseRobotInfo responseRobotInfo = new ResponseRobotInfo();
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        if(intent != null){
+        mTaskHandler.handleIntent(intent) ;
 
-            String json = intent.getStringExtra(DATA) ;
-
-            TransferData transferData = null ;
-            try{
-                transferData = GSON.fromJson(json, TransferData.class) ;
-            }catch (Exception e){
-            }
-            if(transferData != null){
-
-                switch (transferData.getType()){
-
-                    case Base.TYPE_REQUEST_ROBOT_INFO : // 请求机器信息
-
-                        RequestRobotInfo requestRobotInfo = null ;
-                        try{
-                            requestRobotInfo = GSON.fromJson(transferData.getJsonData(),RequestRobotInfo.class) ;
-
-                        }catch (Exception e){
-
-                            e.printStackTrace();
-                        }
-                        if(requestRobotInfo != null){
-                            MainServiceInfo.response(NavigationService.this, responseRobotInfo);    // 响应机器信息
-                        }
-
-                        break;
-                    case Base.TYPE_REQUEST_CLOSE_TEAM : // 请求收队信息
-
-                        RequestCloseTeam requestCloseTeam = null ;
-                        try{
-                            requestCloseTeam = GSON.fromJson(transferData.getJsonData(),RequestCloseTeam.class) ;
-
-                        }catch (Exception e){
-                            e.printStackTrace();
-                        }
-                        if(requestCloseTeam != null){
-
-                            ResponseCloseTeam responseCloseTeam = new ResponseCloseTeam() ;
-                            responseCloseTeam.setInitMap(isInitMap);
-                            if (isInitMap){
-
-                                mTaskHandler.startTeamTasks(requestCloseTeam.getTeamNames(),mTeamTaskListener);
-
-                            }else {
-
-                                MainServiceInfo.response(NavigationService.this, responseCloseTeam);
-                            }
-
-                        }
-
-                        break;
-                    case Base.TYPE_REQUEST_CANCEL_CLOSE_TEAM: // 请求取消收队
-
-                        RequestCancelCloseTeam requestCancelCloseTeam = null ;
-                        try{
-                            requestCancelCloseTeam = GSON.fromJson(transferData.getJsonData(),RequestCancelCloseTeam.class) ;
-
-                        }catch (Exception e){
-                            e.printStackTrace();
-                        }
-                        if(requestCancelCloseTeam != null){
-
-                            ResponseCancelCloseTeam responseCancelCloseTeam = new ResponseCancelCloseTeam() ;
-                            responseCancelCloseTeam.setInitMap(isInitMap);
-
-                            if(isInitMap){ // 如果未初始化
-
-                                String teamName = requestCancelCloseTeam.getTeamName();
-                                responseCancelCloseTeam.setTeamName(teamName);
-                                boolean isSuccessCancel = mTaskHandler.cancelTeamTask(teamName) ;
-                                responseCancelCloseTeam.setSuccessCancel(isSuccessCancel);
-                            }
-
-                            MainServiceInfo.response(NavigationService.this, responseCancelCloseTeam);
-                        }
-
-                        break;
-//                    case Base.TYPE_REQUEST_CLOSE_TEAM_NAMES: // 请求收队信息
-//
-//                        RequestCloseTeamNames requestCloseTeamNames = null ;
-//                        try{
-//                            requestCloseTeamNames = GSON.fromJson(transferData.getJsonData(),RequestCloseTeamNames.class) ;
-//
-//                        }catch (Exception e){
-//
-//                        }
-//                        if(requestCloseTeamNames != null){
-//
-//
-//
-//
-//                        }
-//
-//                        break;
-                }
-            }
-
-        }
         return super.onStartCommand(intent, flags, startId);
     }
 
-    /**
-     * 是否初始化点图
-     * */
-    private boolean isInitMap = false ;
-    private MapInfo mSelectMapInfo ;
-
-    /**加载地图*/
-    private boolean initMap(){
-
-        dismissProgress() ;
-
-        final MapInfo mapInfo = MapInfoData.getSelectMapInfo(NavigationService.this) ;
-        if(mapInfo.equals(mSelectMapInfo) && isInitMap){
-
-            return isInitMap ;
-        }
-        mSelectMapInfo = mapInfo ;
-        isInitMap = false ;
-
-        final String mapName = mapInfo.getMapName() ;
-        final String startPointName = mapInfo.getStartPointName() ;
-
-        if(TextUtils.isEmpty(mapName) || TextUtils.isEmpty(startPointName) ){
-
-            Toast.makeText(this, "没有选择地图或者起始点！！！",Toast.LENGTH_SHORT).show() ;
-            Intent intent = new Intent(this,MapActivity.class ) ;
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ;
-            startActivity(intent);
-
-        }else{
-
-
-            DialogInterface.OnClickListener onClickListener = new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-
-                    if(which == DialogInterface.BUTTON_POSITIVE){
-
-                        // 加载地图
-                        GsApi.useMap(new ResponseListener<String>() {
-                            @Override
-                            public void success(String s) {
-                                LogHelper.i(TAG, LogHelper.__TAG__() + ",s : " + s);
-
-                                Message message = mHandler.obtainMessage(WHAT_USE_MAP_SUCCESS) ;
-                                message.obj = "加载地图成功" ;
-                                mHandler.sendMessage(message) ;
-
-                            }
-
-                            @Override
-                            public void faild(String s, String s1) {
-
-                                LogHelper.w(TAG, LogHelper.__TAG__() + ",s : " + s);
-                                Message message = mHandler.obtainMessage(WHAT_USE_MAP_FAIL) ;
-                                message.obj = "失败s：" + s + ",s1 : " + s1 ;
-                                mHandler.sendMessage(message) ;
-
-                            }
-
-                            @Override
-                            public void error(Throwable throwable) {
-
-                                LogHelper.e(TAG, LogHelper.__TAG__() + ",throwable : " + throwable.getMessage());
-                                Message message = mHandler.obtainMessage(WHAT_USE_MAP_ERROR) ;
-                                message.obj = "异常：" + throwable.getMessage() ;
-                                mHandler.sendMessage(message) ;
-
-                            }
-                        }, mapName) ;
-
-                        showProgress("正在加载"+ mapName +"地图") ;
-
-                    }
-                }
-            };
-
-            AlertDialog.Builder builder= new AlertDialog.Builder(this);
-            builder
-                    .setTitle("加载地图").
-                    setMessage(String.format(Locale.CHINA, "是否使用《%s》地图的《%s》起始点加载地图？" ,mapInfo.getMapName(), mapInfo.getStartPointName()))
-                    .setPositiveButton("确定", onClickListener)
-                    .setNegativeButton("取消",null);
-
-            AlertDialog alertDialog = builder.create();
-            alertDialog.setCancelable(false);
-            alertDialog.setCanceledOnTouchOutside(false);
-            alertDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_TOAST);
-            alertDialog.show();
-        }
-        return isInitMap ;
-    }
-
-
-    private ProgressDialog mProgressDialog ;
-
-    private void showProgress(String text){
-
-        if(mProgressDialog == null){
-
-            mProgressDialog = new ProgressDialog(this) ;
-            mProgressDialog.setTitle("加载地图");
-            mProgressDialog.setCancelable(false);
-            mProgressDialog.setCanceledOnTouchOutside(false);
-            mProgressDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_TOAST);
-        }
-
-        mProgressDialog.setMessage(text);
-        mProgressDialog.show();
-
-    }
-
-    private void dismissProgress(){
-
-        if(mProgressDialog != null && mProgressDialog.isShowing()){
-
-            mProgressDialog.dismiss();
-        }
-    }
-
-
-    /**设置起始点*/
-    private void loadMap(final String mapName, final String startPointName){
-
-        // 加载地图
-        ResponseListener<String> responseListener = new ResponseListener<String>() {
-            @Override
-            public void success(String s) {
-
-                LogHelper.i(TAG, LogHelper.__TAG__() + ",s : " + s);
-
-                Message message = mHandler.obtainMessage(WHAT_REQUEST_INITIALIZE_SUCCESS) ;
-                message.obj = "设置起始点成功" ;
-                mHandler.sendMessage(message) ;
-            }
-
-            @Override
-            public void faild(String s, String s1) {
-
-                LogHelper.w(TAG, LogHelper.__TAG__() + ",s : " + s);
-
-                Message message = mHandler.obtainMessage(WHAT_REQUEST_INITIALIZE_FAIL) ;
-                message.obj = "失败s：" + s + ",s1 : " + s1 ;
-                mHandler.sendMessage(message) ;
-            }
-
-            @Override
-            public void error(Throwable throwable) {
-
-                LogHelper.e(TAG, LogHelper.__TAG__() + ",throwable : " + throwable.getMessage());
-
-                Message message = mHandler.obtainMessage(WHAT_REQUEST_INITIALIZE_ERROR) ;
-                message.obj = "异常：" + throwable.getMessage() ;
-                mHandler.sendMessage(message) ;
-
-            }
-        };
-        GsApi.requestInitialize(responseListener,mapName, startPointName) ;
-    }
-
-
     @Override
     public void onDestroy() {
+
+        mTaskHandler.stop();
         super.onDestroy();
-        unregisterReceiver();
-
-    }
-
-    public static final String ACTION_BATTERY_CHANGE = "com.yongyida.robot.BATTERY_CHANGE" ;
-
-    public static final String KEY_IS_CHARGING      = "isCharging" ;
-    public static final String KEY_LEVEL            = "level" ;
-    public static final String KEY_STATE            = "state" ;
-
-    private void registerReceiver(){
-
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(Intent.ACTION_TIME_TICK);        //每分钟变化
-        intentFilter.addAction(Intent.ACTION_TIMEZONE_CHANGED); //设置了系统时区
-        intentFilter.addAction(Intent.ACTION_TIME_CHANGED);     //设置了系统时间
-        intentFilter.addAction(ACTION_BATTERY_CHANGE);
-//        intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
-
-        registerReceiver(mTimeChangeReceiver, intentFilter);
-    }
-
-    private void unregisterReceiver(){
-
-        unregisterReceiver(mTimeChangeReceiver);
-    }
-
-    private BroadcastReceiver mTimeChangeReceiver = new BroadcastReceiver() {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            final String action = intent.getAction() ;
-            LogHelper.i(TAG, LogHelper.__TAG__()  +  ", currentThread : " + Thread.currentThread().getName() +  ", this : " + this + ", action : " + action );
-
-            if (Intent.ACTION_TIME_TICK.equals(action) || Intent.ACTION_TIMEZONE_CHANGED.equals(action) ||
-                    Intent.ACTION_TIME_CHANGED.equals(action)){
-
-                if(mTimeChangedListener != null){
-
-                    mTimeChangedListener.onTimeChanged();
-                }
-
-
-                if(isInitMap){
-                    mTaskHandler.changeTime();
-                }
-
-            } if(ACTION_BATTERY_CHANGE.equals(action)){
-
-                boolean isCharging = intent.getBooleanExtra(KEY_IS_CHARGING , false) ;  //是否处于充电状态
-                int level = intent.getIntExtra(KEY_LEVEL , -1) ;    //电量水平
-//                int state = intent.getIntExtra(KEY_STATE , -1) ;    //电量状态
-
-                refreshBatteryInfo(isCharging, level) ;
-
-            }else if(Intent.ACTION_BATTERY_CHANGED.equals(action)){
-
-                int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL/*当前电量*/, 0);
-                int state = intent.getIntExtra(BatteryManager.EXTRA_STATUS/*电池状态*/,0);
-
-                boolean isCharging = BatteryManager.BATTERY_STATUS_CHARGING == state ;
-
-                refreshBatteryInfo(isCharging, level) ;
-            }
-
-        }
-
-    } ;
-
-    private void refreshBatteryInfo(boolean isCharging, int level) {
-
-        LogHelper.i(TAG, LogHelper.__TAG__()  +  ", isCharging : " + isCharging +  ", level : " + level ) ;
-
-        if(isInitMap){
-            mTaskHandler.batteryChange(level);
-        }
     }
 
 }

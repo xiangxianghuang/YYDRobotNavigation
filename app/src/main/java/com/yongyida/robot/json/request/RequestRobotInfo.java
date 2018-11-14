@@ -1,13 +1,10 @@
 package com.yongyida.robot.json.request;
 
-import com.yongyida.robot.json.Base;
-
 /**
  * Create By HuangXiangXiang 2018/10/25
  * 请求机器的信息
  */
-public class RequestRobotInfo extends Base{
-
+public class RequestRobotInfo extends BaseRequest{
 
     @Override
     public int getType() {

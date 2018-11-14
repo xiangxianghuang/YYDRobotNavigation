@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.yongyida.robot.navigation.R;
@@ -17,20 +18,38 @@ import java.util.ArrayList;
  */
 public class TeamAdapter extends BaseAdapter {
 
-    private final LayoutInflater mInflater ;
-    private ArrayList<TeamTask> mTeamTasks ;
+    private final LayoutInflater mInflater;
+    private ArrayList<TeamTask> mTeamTasks;
 
-    public TeamAdapter(Context context, ArrayList<TeamTask> teamTasks){
+    private String mTeamName ;
+    private float mPercent ;
 
-        mInflater = LayoutInflater.from(context) ;
-        mTeamTasks = teamTasks ;
+    public TeamAdapter(Context context, ArrayList<TeamTask> teamTasks) {
+
+        mInflater = LayoutInflater.from(context);
+        mTeamTasks = teamTasks;
     }
+
+    public void setData(String teamName){
+
+        this.mTeamName = teamName ;
+        this.mPercent = 0 ;
+        notifyDataSetChanged();
+    }
+
+    public void setData(String teamName , float percent){
+
+        this.mTeamName = teamName ;
+        this.mPercent = percent ;
+        notifyDataSetChanged();
+    }
+
 
     @Override
     public int getCount() {
-        if(mTeamTasks == null){
+        if (mTeamTasks == null) {
 
-            return 0 ;
+            return 0;
         }
 
         return mTeamTasks.size();
@@ -49,20 +68,49 @@ public class TeamAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
 
-        TextView teamNameTvw ;
-        if(convertView == null){
+        ViewHolder holder ;
+        if (convertView == null) {
 
-            convertView = mInflater.inflate(R.layout.item_team, null) ;
-            teamNameTvw = convertView.findViewById(R.id.team_name_tvw) ;
-            convertView.setTag(teamNameTvw);
+            convertView = mInflater.inflate(R.layout.item_team, null);
+            holder = new ViewHolder(convertView) ;
+            convertView.setTag(holder);
 
-        }else {
+        } else {
 
-            teamNameTvw = (TextView) convertView.getTag();
+            holder = (ViewHolder) convertView.getTag();
         }
 
-        teamNameTvw.setText(mTeamTasks.get(position).getTeamName());
+        holder.setData(mTeamTasks.get(position).getTeamName());
 
         return convertView;
+    }
+
+    class ViewHolder {
+        View view;
+        ProgressBar mPercentPbr;
+        TextView mTeamNameTvw;
+
+        ViewHolder(View view) {
+            this.view = view;
+            this.mPercentPbr = (ProgressBar) view.findViewById(R.id.percent_pbr);
+            this.mTeamNameTvw = (TextView) view.findViewById(R.id.team_name_tvw);
+        }
+
+        private void setData(String teamName){
+
+            this.mTeamNameTvw.setText(teamName);
+
+            if(teamName.equals(mTeamName)){
+
+                mPercentPbr.setVisibility(View.VISIBLE);
+                mPercentPbr.setProgress((int) mPercent);
+
+            }else {
+
+                mPercentPbr.setVisibility(View.GONE);
+            }
+        }
+
+
     }
 }

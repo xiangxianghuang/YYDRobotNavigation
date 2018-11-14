@@ -18,25 +18,56 @@
         android:theme="@style/AppTheme"
         android:name=".NavigationApplication"
         >
-        <activity android:name=".activity.TaskGeneralActivity">
-
+        <activity android:name=".activity.TaskGeneralActivity"
+            android:screenOrientation="landscape"
+            >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name=".activity.TaskSettingActivity"
+            android:screenOrientation="landscape"
+
+            />
+        <activity android:name=".activity.MapActivity"
+            android:screenOrientation="landscape"
+            >
 
         </activity>
-        <activity android:name=".activity.TaskSettingActivity" />
-        <activity android:name=".activity.MapActivity" >
+        <activity android:name=".activity.EditPathActivity"
+            android:screenOrientation="landscape"
+            >
+        </activity>
+        <activity android:name=".activity.PlayVideoActivity"
+            android:screenOrientation="landscape"
+            />
+        <activity android:name=".activity.TestActivity"
+            android:screenOrientation="landscape"
+            >
+
+            <!--<intent-filter>-->
+                <!--<action android:name="android.intent.action.MAIN" />-->
+                <!--<category android:name="android.intent.category.LAUNCHER" />-->
+            <!--</intent-filter>-->
+
 
         </activity>
-        <activity android:name=".activity.EditPathActivity" >
+        <activity android:name=".activity.TeamActivity"
+            android:screenOrientation="landscape"
+            />
+        <activity android:name=".activity.CloseTeamActivity"
+            android:screenOrientation="landscape"
+            />
+        <activity android:name=".activity.WorkActivity"
+            android:screenOrientation="landscape"
+            >
+            <intent-filter>
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
         </activity>
-        <activity android:name=".activity.PlayVideoActivity" />
-        <activity android:name=".activity.TestActivity" >
-        </activity>
-        <activity android:name=".activity.TeamActivity" />
-        <activity android:name=".activity.CloseTeamActivity" />
 
         <service android:name=".NavigationService" >
             <intent-filter>

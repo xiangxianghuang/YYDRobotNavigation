@@ -4,9 +4,9 @@ import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.media.MediaPlayer;
+import android.os.Handler;
 
 import com.yongyida.robot.data.MediaData;
-import com.yongyida.robot.data.TaskInfoData;
 
 import java.io.IOException;
 
@@ -62,8 +62,23 @@ public class VoiceHelper {
         startSpeak(type,1, speakListener);
     }
 
+    private Handler mHandler = new Handler() ;
+    private Runnable mDelayRunnable = new Runnable() {
+        @Override
+        public void run() {
+
+            if(mediaPlayer != null){
+
+                mediaPlayer.start();
+            }
+
+        }
+    } ;
+
     private int mTimes ;
     public void startSpeak(String type , final int times, SpeakListener speakListener){
+
+        mHandler.removeCallbacks(mDelayRunnable);
 
         this.mTimes = times ;
         this.speakListener = speakListener ;
@@ -77,7 +92,10 @@ public class VoiceHelper {
 
                     if(--mTimes > 0) {
 
-                        mp.start();
+//                        mp.start();
+
+                        mHandler.postDelayed(mDelayRunnable, 2 * 1000) ;
+
 
                     }else {
 
@@ -121,9 +139,6 @@ public class VoiceHelper {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-
     }
 
     public void stopSpeak() {
@@ -133,7 +148,6 @@ public class VoiceHelper {
 
             mediaPlayer.stop();
         }
-
     }
 
 

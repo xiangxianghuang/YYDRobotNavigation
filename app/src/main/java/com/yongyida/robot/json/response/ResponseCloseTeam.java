@@ -6,6 +6,8 @@ package com.yongyida.robot.json.response;
  */
 public class ResponseCloseTeam extends BaseResponse{
 
+    // 反馈执行收队的信息
+    public static final int ACTION_RESPONSE_CLOSE_TEAM                  = 0x00;
     // 通过辅线前往收队起始点
     public static final int ACTION_GO_TO_START_POINT_BY_AUXILIARY_LINE  = 0x01;
     // 开始收队
@@ -20,7 +22,7 @@ public class ResponseCloseTeam extends BaseResponse{
     public static final int ACTION_COMPLETE_ALL_CLOSE_TEAM              = 0x06;
 
     /**收队类型*/
-    private int action ;
+    private int action = ACTION_RESPONSE_CLOSE_TEAM;
     /**队伍名*/
     private String teamName ;
     /**进度*/
@@ -28,6 +30,37 @@ public class ResponseCloseTeam extends BaseResponse{
     /**错误*/
     private Fail fail ;
 
+    public int getAction() {
+        return action;
+    }
+
+    public void setAction(int action) {
+        this.action = action;
+    }
+
+    public String getTeamName() {
+        return teamName;
+    }
+
+    public void setTeamName(String teamName) {
+        this.teamName = teamName;
+    }
+
+    public Schedule getSchedule() {
+        return schedule;
+    }
+
+    public void setSchedule(Schedule schedule) {
+        this.schedule = schedule;
+    }
+
+    public Fail getFail() {
+        return fail;
+    }
+
+    public void setFail(Fail fail) {
+        this.fail = fail;
+    }
 
     /**完成全部收队*/
     public void completeAllCloseTeam(){

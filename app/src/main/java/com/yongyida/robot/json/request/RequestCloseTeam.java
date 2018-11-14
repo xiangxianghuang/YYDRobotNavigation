@@ -1,13 +1,11 @@
 package com.yongyida.robot.json.request;
 
-import com.yongyida.robot.json.Base;
-
 import java.util.ArrayList;
 
 /**
  * Create By HuangXiangXiang 2018/11/2
  */
-public class RequestCloseTeam extends Base {
+public class RequestCloseTeam extends BaseRequest {
 
     /**队伍名称*/
     private ArrayList<String> teamNames ;

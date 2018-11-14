@@ -1,12 +1,9 @@
 package com.yongyida.robot.json.request;
 
-import com.yongyida.robot.json.Base;
-
 /**
  * Create By HuangXiangXiang 2018/11/2
  */
-public class RequestCloseTeamNames extends Base {
-
+public class RequestCloseTeamNames extends BaseRequest {
 
     @Override
     public int getType() {

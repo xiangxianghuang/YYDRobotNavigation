@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import com.yongyida.robot.navigation.NavigationService;
 import com.yongyida.robot.navigation.R;
+import com.yongyida.robot.navigation.TaskHandler;
 import com.yongyida.robot.navigation.bean.BaseTask;
 import com.yongyida.robot.navigation.bean.TimerTask;
 import com.yongyida.robot.navigation.dialog.CurrentTaskStateDialog;
@@ -45,7 +46,7 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
     private TextView mTimeTvw;
 
 
-    private NavigationService.TimeChangedListener mTimeChangedListener = new NavigationService.TimeChangedListener() {
+    private TaskHandler.TimeChangedListener mTimeChangedListener = new TaskHandler.TimeChangedListener() {
         @Override
         public void onTimeChanged() {
 
@@ -151,9 +152,10 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
 
                 if (mNavigationBinder != null) {
 
+                    String currTaskInfo = mNavigationBinder.getCurrTaskInfo();
                     TimerTask currTimerTask = mNavigationBinder.getCurrTimerTask();
 
-                    showCurrentTaskStateDialog(currTimerTask);
+                    showCurrentTaskStateDialog(currTaskInfo, currTimerTask);
 
                 }
 
@@ -188,20 +190,28 @@ public class TaskGeneralActivity extends Activity implements View.OnClickListene
         }
     };
 
-    private void showCurrentTaskStateDialog(TimerTask currTaskInfo) {
+    private void showCurrentTaskStateDialog(String currTaskInfo, TimerTask currTimerTask) {
 
         if (mCurrentTaskStateDialog == null) {
 
-            mCurrentTaskStateDialog = new CurrentTaskStateDialog(this,currTaskInfo);
+            mCurrentTaskStateDialog = new CurrentTaskStateDialog(this,currTaskInfo,currTimerTask);
             mCurrentTaskStateDialog.setToggleTaskListener(mToggleTaskListener);
+            mNavigationBinder.setOnTaskChangeListener(mCurrentTaskStateDialog.mOnTaskChangeListener);
 
         } else {
 
-            mCurrentTaskStateDialog.setTask(currTaskInfo);
+            mCurrentTaskStateDialog.setTask(currTaskInfo,currTimerTask);
         }
 
         mCurrentTaskStateDialog.show();
 
     }
 
+
+//    @Override
+//    public void onBackPressed() {
+//
+//        Intent intent = new Intent(this, WorkActivity.class);
+//        startActivity(intent) ;
+//    }
 }

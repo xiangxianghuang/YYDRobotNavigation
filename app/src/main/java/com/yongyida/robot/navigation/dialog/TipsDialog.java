@@ -32,7 +32,6 @@ public class TipsDialog extends Dialog implements View.OnClickListener {
     }
 
 
-    @SuppressLint("WrongViewCast")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

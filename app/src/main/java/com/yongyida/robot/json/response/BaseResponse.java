@@ -7,7 +7,9 @@ import com.yongyida.robot.json.Base;
  */
 public abstract class BaseResponse extends Base {
 
-    /**是否初始化地图*/
+    /**
+     * 是否初始化地图
+     * */
     private boolean initMap ;
 
     public boolean isInitMap() {

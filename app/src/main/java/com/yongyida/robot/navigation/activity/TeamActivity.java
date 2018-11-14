@@ -121,10 +121,47 @@ public class TeamActivity extends Activity implements View.OnClickListener, Adap
 
         mTeamNames.clear();
         mTeamNames.add(teamTask.getTeamName()) ;
-        mNavigationBinder.startTeamTasks(mTeamNames);
+        mNavigationBinder.startTeamTasks(mTeamNames, mTeamTaskListener);
     }
 
     private ArrayList<String> mTeamNames = new ArrayList<>() ;
+    private TeamTaskListener mTeamTaskListener = new TeamTaskListener() {
+        @Override
+        public void onStartTeamLine(String teamName) {
+
+            mTeamAdapter.setData(teamName);
+        }
+
+        @Override
+        public void onTeamTaskStart(String teamName) {
+
+            mTeamAdapter.setData(teamName);
+        }
+
+        @Override
+        public void onTeamTaskSchedule(String teamName, float percent) {
+
+            mTeamAdapter.setData(teamName, percent);
+        }
+
+        @Override
+        public void onTeamTaskComplete(String teamName) {
+
+            mTeamAdapter.setData(teamName);
+        }
+
+        @Override
+        public void onFail(String teamName, int failCode, String failMessage) {
+
+            mTeamAdapter.setData(teamName);
+        }
+
+        @Override
+        public void onAllTeamTaskComplete() {
+
+            mTeamAdapter.setData(null);
+        }
+    } ;
 
 
 }

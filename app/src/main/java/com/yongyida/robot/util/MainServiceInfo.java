@@ -267,6 +267,8 @@ public class MainServiceInfo {
 
         String json = TransferData.packToString(base) ;
 
+        LogHelper.i(TAG, LogHelper.__TAG__() + ",json : " + json );
+
         Intent intent = new Intent(ACTION_BSN_SERVICE);
         intent.setPackage(PACKAGE_BSN_SERVICE);
         intent.putExtra(KEY_FROM, context.getPackageName());
