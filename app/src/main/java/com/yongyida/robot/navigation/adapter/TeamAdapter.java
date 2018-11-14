@@ -102,10 +102,20 @@ public class TeamAdapter extends BaseAdapter {
 
             if(teamName.equals(mTeamName)){
 
-                mPercentPbr.setVisibility(View.VISIBLE);
-                mPercentPbr.setProgress((int) mPercent);
+                view.setBackgroundResource(R.drawable.bg_item_team_select);
+
+                if(mPercent > 0){
+
+                    mPercentPbr.setVisibility(View.VISIBLE);
+                    mPercentPbr.setProgress((int) mPercent);
+
+                }else{
+
+                    mPercentPbr.setVisibility(View.GONE);
+                }
 
             }else {
+                view.setBackgroundResource(R.drawable.bg_item_team);
 
                 mPercentPbr.setVisibility(View.GONE);
             }

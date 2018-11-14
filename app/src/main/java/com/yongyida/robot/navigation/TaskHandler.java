@@ -127,7 +127,7 @@ public class TaskHandler {
     private ChargingTask mChargingTask = new ChargingTask();            // 充电任务
 
     // 收队任务
-    private TeamTask mCurrTeamTask ;                                        // 当前收队任务
+    private TeamTask mCurrTeamTask ;                                    // 当前收队任务
     private ArrayList<TeamTask> mTeamTasks = new ArrayList<>();         // 全部的收队任务
 
 
@@ -162,6 +162,7 @@ public class TaskHandler {
         PlayerHelper.getInstance() ;
         VideoHelper.getInstance(context) ;
         VoiceHelper.getInstance(context) ;
+        CloseTeamHelper.getInstance(context);
     }
 
 
@@ -892,7 +893,6 @@ public class TaskHandler {
     private boolean isArrivedLeaveChargingPathEnd(String pointName){
 
         LogHelper.w(TAG, LogHelper.__TAG__() + ", pointName: " + pointName ) ;
-//        showToastNotMainThread("pointName : " + pointName);
         showToast("pointName : " + pointName);
 
         if(pointName != null){
@@ -902,7 +902,6 @@ public class TaskHandler {
                 if(mCurrTimerTask != null){ // 有定时任务
 
                     goToTimerTaskPath(mCurrTimerTask.getPathInfo().getName());
-//                    NavigationHelper.goToTimerTaskPath(mMapInfo.getMapName(), mCurrTimerTask.getPathInfo().getName());
 
                 }else{ // 前往充电点
 
@@ -914,7 +913,6 @@ public class TaskHandler {
 
                 // 前往充电点
                 goToPoint(NavigationHelper.POINT_AUTO_CHARGING_NAME);
-//                NavigationHelper.startPointTask(mMapInfo.getMapName(), NavigationHelper.POINT_AUTO_CHARGING_NAME);
 
                 return true ;
 
@@ -941,7 +939,6 @@ public class TaskHandler {
                         startTeamTaskTips(mCurrTeamTask.getTeamName());
 
                         goToTeamTaskPath(mCurrTeamTask.getTeamName(), mCurrTeamTask.getTeamPathName());
-//                        NavigationHelper.goToTeamTaskPath(mMapInfo.getMapName(), mTeamTask.getTeamName(), mTeamTask.getTeamPathName());
 
                         return true ;
 
@@ -954,10 +951,7 @@ public class TaskHandler {
                     }
                 }
             }
-
-
         }
-
         return false ;
     }
 
@@ -978,9 +972,7 @@ public class TaskHandler {
         LogHelper.i(TAG, LogHelper.__TAG__() + ", pointInfo : " + GSON.toJson(pointInfo));
 
         startExecuteAction(pointInfo.getActions()) ;
-
     }
-
 
     private Runnable mTeamTaskCompleteRunnable = new Runnable() {
         @Override
@@ -989,7 +981,6 @@ public class TaskHandler {
             onTeamTaskComplete() ;
         }
     };
-
 
     /**
      * 单个收队结束
@@ -1479,15 +1470,12 @@ public class TaskHandler {
             return true;
         }
 
-        TeamTask teamTask = queryTeamTask(teamName) ;
-        if(teamTask == null){
+        if(!mTeamNames.remove(teamName)){
 
-//            showToast("查询不到《" + teamName + "》的收队任务！");
-            showToast("查询不到《" + teamName + "》的收队任务！");
+            showToast("队列中查询不到《" + teamName + "》收队任务！");
             return false;
         }
 
-        mTeamTasks.remove(teamTask) ;
         return true;
     }
 

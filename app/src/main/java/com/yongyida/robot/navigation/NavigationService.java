@@ -155,6 +155,7 @@ public class NavigationService extends Service {
         mTaskHandler = new TaskHandler(this) ;
 //        mTaskHandler = TaskHandler.getInstance(this) ;
         mTaskHandler.start();
+        mTaskHandler.loadMapAndStartPoint() ;
     }
 
     @Override

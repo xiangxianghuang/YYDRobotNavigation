@@ -122,44 +122,84 @@ public class TeamActivity extends Activity implements View.OnClickListener, Adap
         mTeamNames.clear();
         mTeamNames.add(teamTask.getTeamName()) ;
         mNavigationBinder.startTeamTasks(mTeamNames, mTeamTaskListener);
+
+        mTeamAdapter.setData(teamTask.getTeamName());
     }
 
     private ArrayList<String> mTeamNames = new ArrayList<>() ;
     private TeamTaskListener mTeamTaskListener = new TeamTaskListener() {
         @Override
-        public void onStartTeamLine(String teamName) {
+        public void onStartTeamLine(final String teamName) {
 
-            mTeamAdapter.setData(teamName);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    mTeamAdapter.setData(teamName);
+                }
+            });
+
         }
 
         @Override
-        public void onTeamTaskStart(String teamName) {
+        public void onTeamTaskStart(final String teamName) {
 
-            mTeamAdapter.setData(teamName);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    mTeamAdapter.setData(teamName);
+                }
+            });
         }
 
         @Override
-        public void onTeamTaskSchedule(String teamName, float percent) {
+        public void onTeamTaskSchedule(final String teamName, final float percent) {
 
-            mTeamAdapter.setData(teamName, percent);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    mTeamAdapter.setData(teamName, percent);
+                }
+            });
         }
 
         @Override
-        public void onTeamTaskComplete(String teamName) {
+        public void onTeamTaskComplete(final String teamName) {
 
-            mTeamAdapter.setData(teamName);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    mTeamAdapter.setData(teamName);
+                }
+            });
+
         }
 
         @Override
-        public void onFail(String teamName, int failCode, String failMessage) {
+        public void onFail(final String teamName, int failCode, String failMessage) {
 
-            mTeamAdapter.setData(teamName);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    mTeamAdapter.setData(teamName);
+                }
+            });
         }
 
         @Override
         public void onAllTeamTaskComplete() {
 
-            mTeamAdapter.setData(null);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    mTeamAdapter.setData(null);
+                }
+            });
         }
     } ;
 

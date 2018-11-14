@@ -99,7 +99,11 @@ public class PlayVideoActivity extends Activity implements MediaPlayer.OnPrepare
 
         }else {
 
-            mPlayVideoListener.onEnd();
+            if(mPlayVideoListener != null){
+
+                mPlayVideoListener.onEnd();
+            }
+
             finish();
         }
 
@@ -110,7 +114,10 @@ public class PlayVideoActivity extends Activity implements MediaPlayer.OnPrepare
 
         LogHelper.i(TAG, LogHelper.__TAG__()+ "what : " + what + "extra : " + extra );
 
-        mPlayVideoListener.onError();
+        if(mPlayVideoListener != null){
+
+            mPlayVideoListener.onError();
+        }
         finish();
 
         return false;
