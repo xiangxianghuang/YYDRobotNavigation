@@ -1,5 +1,6 @@
 package com.yongyida.robot.navigation.activity;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -66,6 +67,13 @@ public class PlayVideoActivity extends Activity implements MediaPlayer.OnPrepare
         startPlayVideo() ;
     }
 
+
+    @SuppressLint("MissingSuperCall")
+    @Override
+    protected void onPause() {
+        super.onDestroy();
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -74,9 +82,20 @@ public class PlayVideoActivity extends Activity implements MediaPlayer.OnPrepare
         mPlayVideoListener = null ;
     }
 
-    public void startPlayVideo() {
 
-        String uri = "android.resource://" + getPackageName() + "/" + R.raw.test;
+    public void startPlayVideo(String path, int times, VideoHelper.PlayVideoListener playVideoListener) {
+
+        mPath = path ;
+        mTimes = times ;
+        mPlayVideoListener = playVideoListener ;
+
+        startPlayVideo();
+    }
+
+    private void startPlayVideo() {
+
+//        String uri = "android.resource://" + getPackageName() + "/" + R.raw.test;
+        String uri = "android.resource://" + getPackageName() + "/" + R.raw.cctv;
         mVideoVvw.setVideoURI(Uri.parse(uri));
 
 //        this.mVideoVvw.setVideoPath(path);

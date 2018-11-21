@@ -42,7 +42,14 @@ public class VideoHelper {
 
     public void startPlayVideo(String type , final int times, PlayVideoListener playVideoListener){
 
-        PlayVideoActivity.startActivity(context, type, times, playVideoListener);
+        if(PlayVideoActivity.mySelf == null || PlayVideoActivity.mySelf.isFinishing() || PlayVideoActivity.mySelf .isDestroyed() ){
+
+            PlayVideoActivity.startActivity(context, type, times, playVideoListener);
+        }else{
+
+            PlayVideoActivity.mySelf.startPlayVideo(type, times, playVideoListener);
+        }
+
     }
 
     public void stopPlayVideo(){

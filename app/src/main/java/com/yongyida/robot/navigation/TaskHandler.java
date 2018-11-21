@@ -34,7 +34,14 @@ import com.gs.gsnavlibrary.listener.ResponseListener;
 import com.yongyida.robot.communicate.app.common.send.SendClient;
 import com.yongyida.robot.communicate.app.common.send.SendResponseListener;
 import com.yongyida.robot.communicate.app.hardware.motion.response.data.MotionSystem;
+import com.yongyida.robot.communicate.app.hardware.motion.send.data.ArmControl;
+import com.yongyida.robot.communicate.app.hardware.motion.send.data.FingerControl;
+import com.yongyida.robot.communicate.app.hardware.motion.send.data.FootControl;
+import com.yongyida.robot.communicate.app.hardware.motion.send.data.HandControl;
+import com.yongyida.robot.communicate.app.hardware.motion.send.data.HeadControl;
 import com.yongyida.robot.communicate.app.hardware.motion.send.data.QueryMotionSystemControl;
+import com.yongyida.robot.communicate.app.hardware.motion.send.data.SteeringControl;
+import com.yongyida.robot.communicate.app.hardware.motion.send.data.constant.Direction;
 import com.yongyida.robot.data.MapInfoData;
 import com.yongyida.robot.data.MediaData;
 import com.yongyida.robot.data.PathDetailInfoData;
@@ -127,7 +134,7 @@ public class TaskHandler {
     private ChargingTask mChargingTask = new ChargingTask();            // 充电任务
 
     // 收队任务
-    private TeamTask mCurrTeamTask ;                                    // 当前收队任务
+    private TeamTask mCurrTeamTask ;                                        // 当前收队任务
     private ArrayList<TeamTask> mTeamTasks = new ArrayList<>();         // 全部的收队任务
 
 
@@ -198,6 +205,7 @@ public class TaskHandler {
     private static final int WHAT_REQUEST_INITIALIZE_ERROR          = 0x20103 ;
     private static final int WHAT_DOOR_IN                           = 0x21001 ;
     private static final int WHAT_DOOR_OUT                          = 0x21002 ;
+    private static final int WHAT_START_PLAY_VIDEO                  = 0x30001 ;
 
     @SuppressLint("HandlerLeak")
     private Handler mHandler = new Handler(){
@@ -242,6 +250,9 @@ public class TaskHandler {
                     showToast(text);
 
                     isInitMap = true ;
+
+                    isInWorkSpace = !(NavigationHelper.POINT_IN_AUTO_CHARGING_NAME.equals(mSelectMapInfo.getStartPointName()));
+
                     loadData();
                     dismissProgress();
 
@@ -270,6 +281,14 @@ public class TaskHandler {
 
                     onDoorOut() ;
                     break;
+
+                case WHAT_START_PLAY_VIDEO:
+
+                    if(mExecuteActionThread!=null){
+
+                        mExecuteActionThread.startPlayVideo();
+                    }
+                    break;
             }
 
         }
@@ -287,16 +306,16 @@ public class TaskHandler {
      * 不管是否在主线程显示toast 信息
      * */
     private void showToast(String text){
-
-        if(isMainThread()){
-
-            showToastInUIThread(text) ;
-        }else {
-
-            Message message = mHandler.obtainMessage(WHAT_TOAST) ;
-            message.obj = text ;
-            mHandler.sendMessage(message) ;
-        }
+//
+//        if(isMainThread()){
+//
+//            showToastInUIThread(text) ;
+//        }else {
+//
+//            Message message = mHandler.obtainMessage(WHAT_TOAST) ;
+//            message.obj = text ;
+//            mHandler.sendMessage(message) ;
+//        }
     }
 
     private Toast mToast ;
@@ -893,6 +912,7 @@ public class TaskHandler {
     private boolean isArrivedLeaveChargingPathEnd(String pointName){
 
         LogHelper.w(TAG, LogHelper.__TAG__() + ", pointName: " + pointName ) ;
+//        showToastNotMainThread("pointName : " + pointName);
         showToast("pointName : " + pointName);
 
         if(pointName != null){
@@ -902,6 +922,7 @@ public class TaskHandler {
                 if(mCurrTimerTask != null){ // 有定时任务
 
                     goToTimerTaskPath(mCurrTimerTask.getPathInfo().getName());
+//                    NavigationHelper.goToTimerTaskPath(mMapInfo.getMapName(), mCurrTimerTask.getPathInfo().getName());
 
                 }else{ // 前往充电点
 
@@ -913,6 +934,7 @@ public class TaskHandler {
 
                 // 前往充电点
                 goToPoint(NavigationHelper.POINT_AUTO_CHARGING_NAME);
+//                NavigationHelper.startPointTask(mMapInfo.getMapName(), NavigationHelper.POINT_AUTO_CHARGING_NAME);
 
                 return true ;
 
@@ -939,6 +961,7 @@ public class TaskHandler {
                         startTeamTaskTips(mCurrTeamTask.getTeamName());
 
                         goToTeamTaskPath(mCurrTeamTask.getTeamName(), mCurrTeamTask.getTeamPathName());
+//                        NavigationHelper.goToTeamTaskPath(mMapInfo.getMapName(), mTeamTask.getTeamName(), mTeamTask.getTeamPathName());
 
                         return true ;
 
@@ -951,7 +974,10 @@ public class TaskHandler {
                     }
                 }
             }
+
+
         }
+
         return false ;
     }
 
@@ -972,7 +998,9 @@ public class TaskHandler {
         LogHelper.i(TAG, LogHelper.__TAG__() + ", pointInfo : " + GSON.toJson(pointInfo));
 
         startExecuteAction(pointInfo.getActions()) ;
+
     }
+
 
     private Runnable mTeamTaskCompleteRunnable = new Runnable() {
         @Override
@@ -981,6 +1009,7 @@ public class TaskHandler {
             onTeamTaskComplete() ;
         }
     };
+
 
     /**
      * 单个收队结束
@@ -1472,7 +1501,7 @@ public class TaskHandler {
 
         if(!mTeamNames.remove(teamName)){
 
-            showToast("队列中查询不到《" + teamName + "》收队任务！");
+            showToast("查询不到《" + teamName + "》的收队任务！");
             return false;
         }
 
@@ -1737,6 +1766,7 @@ public class TaskHandler {
 
         mHandler.removeCallbacks(mTeamTaskCompleteRunnable);
 
+
     }
 
     interface TurnToAngleListener{
@@ -1799,7 +1829,18 @@ public class TaskHandler {
 
                     case VIDEO:
                         stopSpeak();
-                        startPlayVideo() ;
+
+
+                        if(isMainThread()){
+
+                            startPlayVideo() ;
+
+                        }else{
+
+                            mHandler.sendEmptyMessage(WHAT_START_PLAY_VIDEO);
+
+                        }
+
                         break;
 
                 }
@@ -2043,11 +2084,40 @@ public class TaskHandler {
 
         TaskQueueApi.resumeTaskQueue(null) ;
     }
-
     /**
+
      * 开始收队提示
      * */
     private void startTeamTaskTips(String teamName){
+
+        // 显示收队动作
+        if(teamName != null){
+            LogHelper.e(TAG, LogHelper.__TAG__() + ",teamName : " + teamName);
+            int index = teamName.indexOf("_") ;
+            LogHelper.e(TAG, LogHelper.__TAG__() + ",index : " + index);
+            if(index > 0){
+
+                String number = teamName.substring(0,index);
+                LogHelper.e(TAG, LogHelper.__TAG__() + ",number : " + number);
+                int num ;
+                try{
+
+                    num = Integer.parseInt(number) ;
+
+                }catch (Exception e){
+                    num = 0 ;
+                }
+
+                LogHelper.e(TAG, LogHelper.__TAG__() + ",num : " + num);
+                if(num%2 == 0){
+
+                    showAction("收队双号");
+                }else {
+                    showAction("收队单号");
+                }
+            }
+        }
+
 
         CloseTeamHelper.CloseTeamListener closeTeamListener = null ;
 
@@ -2059,7 +2129,138 @@ public class TaskHandler {
      * */
     private void stopTeamTaskTips(){
 
+        showAction("收队结束");
         CloseTeamHelper.getInstance(mContext).stopCloseTeam();
+    }
+
+
+    /**显示动作*/
+    private void showAction(String name){
+
+        LogHelper.e(TAG, LogHelper.__TAG__() + ",name : " + name);
+
+//        String data = "{\"audioName\":\"" + name + "\",\"isOnlyAction\":true}" ;
+//
+//        Intent intent = new Intent() ;
+//        intent.setPackage("com.yongyida.robot.multimodal") ;
+//        intent.setAction("com.yongyida.robot.MULTIMODAL") ;
+//        intent.putExtra("type", "CTRL.DANCE") ;
+//        intent.putExtra("data" , data) ;
+//
+//        mContext.startService(intent) ;
+
+
+        if("收队双号".equals(name)){
+
+            int[] armLefts      = {2203, 2112, 2960, 1407, 2071, 0};
+            int[] armRights     = {2071, 2079, 2076, 2036, 2055,0 } ;
+            int[] fingerLefts   = {0, 0, 0, 0, 0} ;
+            int[] fingerRights  = {0, 0, 0, 0, 0};
+
+            initValues(armLefts, armRights, fingerLefts ,fingerRights ) ;
+
+        }else if("收队单号".equals(name)){
+
+            int[] armLefts      = {2060, 2112, 2048, 2072, 2068, 0};
+            int[] armRights     = {2367, 1948, 3001, 1361, 2097, 0 } ;
+            int[] fingerLefts   = {0, 0, 0, 0, 0} ;
+            int[] fingerRights  = {0, 0, 0, 0, 0};
+
+            initValues(armLefts, armRights, fingerLefts ,fingerRights ) ;
+
+        }else {
+
+            int[] armLefts      = {2035, 2112, 2060, 2060, 2069, 0};
+            int[] armRights     = {2072, 2096, 2040, 2024, 2054, 0} ;
+            int[] fingerLefts   = {0, 0, 0, 0, 0} ;
+            int[] fingerRights  = {0, 0, 0, 0, 0};
+
+            initValues(armLefts, armRights, fingerLefts ,fingerRights ) ;
+
+        }
+
+
+        SendClient.getInstance(mContext).send(null,handControl,null);
+    }
+
+    private HandControl handControl = new HandControl() ;
+    public void initHandControl(){
+
+        // 手
+        handControl.setControl(true);
+        handControl.setDirection(Direction.BOTH);
+
+        int[] armLefts = {};
+        int[] armRights = {} ;
+        int[] fingerLefts = {} ;
+        int[] fingerRights = {};
+
+        initValues(armLefts, armRights, fingerLefts ,fingerRights ) ;
+
+
+    }
+
+    private void initValues(int[] armLefts, int[] armRights, int[] fingerLefts, int[] fingerRights ){
+
+        //手臂
+        ArmControl armControl = handControl.getArmControl() ;
+        initArms(armControl.getArmLefts(), armLefts) ;
+        initArms(armControl.getArmRights(),armRights) ;
+
+        // 手指
+        FingerControl fingerControl = handControl.getFingerControl() ;
+        initFingers(fingerControl.getFingerLefts(),fingerLefts) ;
+        initFingers(fingerControl.getFingerRights(),fingerRights) ;
+
+    }
+
+
+    private void initArms(ArrayList<SteeringControl> arms, int[] values){
+
+        int size = arms.size() ;
+        for (int i = 0 ; i < size ; i ++ ){
+
+            initArm(arms.get(i),values[i]) ;
+        }
+    }
+
+    private void initArm(SteeringControl arm, int value){
+
+        arm.setMode(SteeringControl.Mode.DISTANCE_TIME);
+
+        arm.getDistance().setType(SteeringControl.Distance.Type.TO);
+        arm.getDistance().setUnit(SteeringControl.Distance.Unit.ORIGINAL);
+//        arm.getDistance().setValue(2048);
+        arm.getDistance().setValue(value);
+
+        arm.getTime().setUnit(SteeringControl.Time.Unit.MILLI_SECOND);
+        arm.getTime().setValue(3000);
+
+        arm.setDelay(0);
+    }
+
+    private void initFingers(ArrayList<SteeringControl> fingers, int[] values ){
+
+        int size = fingers.size() ;
+        for (int i = 0 ; i < size ; i ++ ){
+
+            initFinger(fingers.get(i), values[i]) ;
+        }
+    }
+
+    private void initFinger(SteeringControl finger, int value){
+
+        finger.setMode(SteeringControl.Mode.DISTANCE_TIME);
+
+        finger.getDistance().setType(SteeringControl.Distance.Type.TO);
+        finger.getDistance().setUnit(SteeringControl.Distance.Unit.PERCENT);
+//        finger.getDistance().setValue(0);
+        finger.getDistance().setValue(value);
+
+        finger.getTime().setUnit(SteeringControl.Time.Unit.MILLI_SECOND);
+        finger.getTime().setValue(3000);
+
+        finger.setDelay(0);
     }
 
 

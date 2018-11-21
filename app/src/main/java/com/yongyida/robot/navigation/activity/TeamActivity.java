@@ -118,12 +118,26 @@ public class TeamActivity extends Activity implements View.OnClickListener, Adap
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
         TeamTask teamTask = mTeamTasks.get(position) ;
+        String teamName = teamTask.getTeamName() ;
 
-        mTeamNames.clear();
-        mTeamNames.add(teamTask.getTeamName()) ;
-        mNavigationBinder.startTeamTasks(mTeamNames, mTeamTaskListener);
+        TeamTask currTeamTask = mNavigationBinder.getCurrTeamTask() ;
+        if(currTeamTask == teamTask){
 
-        mTeamAdapter.setData(teamTask.getTeamName());
+            mTeamNames.clear();
+            mNavigationBinder.cancelTeamTask(teamName);
+
+            mTeamAdapter.setData(null);
+
+        }else {
+
+            mTeamNames.clear();
+            mTeamNames.add(teamName) ;
+            mNavigationBinder.startTeamTasks(mTeamNames, mTeamTaskListener);
+
+            mTeamAdapter.setData(teamName);
+
+        }
+
     }
 
     private ArrayList<String> mTeamNames = new ArrayList<>() ;

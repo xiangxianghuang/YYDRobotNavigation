@@ -120,6 +120,12 @@ public class NavigationService extends Service {
             return mTaskHandler.getTeamTasks() ;
         }
 
+        public TeamTask getCurrTeamTask(){
+
+            return mTaskHandler.getCurrTeamTask();
+        }
+
+
         /**取消收队名称*/
         public void startTeamTasks(ArrayList<String>teamNames, TeamTaskListener teamTaskListener){
 
